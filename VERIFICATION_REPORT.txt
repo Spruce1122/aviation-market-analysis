@@ -1,0 +1,20 @@
+航空市场供需分析系统——云部署版验证报告
+验证日期：2026-09-01
+
+1. Python 3.12依赖安装：通过。
+2. Python模块静态编译：通过。
+3. 自动化测试：5 passed。
+4. Streamlit首页AppTest：通过，无exception/error。
+5. Streamlit服务启动：通过，/_stcore/health返回ok。
+6. 完整基准Excel回归：通过。
+   Data行数：4,732；共同增长样本：777。
+   生成F01—F07、A01—A03和T01—T04。
+7. 当前上传Excel回归：通过。
+   Data行数：4,732；共同增长样本：777。
+   生成F01—F06、A01—A03和T01—T02。
+   因缺少country_year_ask_capacity，正确跳过F07、T03、T04。
+8. 会话隔离测试：通过。两个独立会话分别持有自己的数据对象与结果。
+9. 同名Excel更新测试：通过。内容指纹变化后重新读取和重新计算。
+10. 内存导出与文件系统测试：通过。上传、分析和结果ZIP生成过程未创建用户数据文件。
+
+本报告证明代码包具备部署条件。最终.streamlit.app网址需由仓库所有者将本包推送到GitHub，并在Streamlit Community Cloud中创建应用后产生。

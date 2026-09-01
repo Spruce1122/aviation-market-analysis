@@ -1,0 +1,13 @@
+services:
+  aviation-dashboard:
+    build: .
+    restart: unless-stopped
+    ports:
+      - "8501:8501"
+    environment:
+      MPLCONFIGDIR: /tmp/aviation-matplotlib
+    read_only: true
+    tmpfs:
+      - /tmp:size=256m,mode=1777
+    security_opt:
+      - no-new-privileges:true
