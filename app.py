@@ -7,11 +7,12 @@ import logging
 import uuid
 import streamlit as st
 from core.session import sync_analysis,release_session_data
+from core.config import DEFAULT_CONFIG
 from core.data_loader import DataInputError
 from components.theme import apply_theme,header
 from components.upload_panel import upload_panel,empty_panel
-from components.sidebar import navigation,parameters
-from components.pages import overview,chart_page,table_page,country_page,methods_page
+from components.sidebar import navigation,fixed_settings_note
+from components.pages import overview,chart_page,table_page,dynamic_page,direction_page,methods_page
 from plots.style import setup_plotting_style
 from plots.registry import PLOT_LOCK
 
@@ -20,7 +21,7 @@ apply_theme()
 header()
 payload,filename,source_label=upload_panel()
 module=navigation()
-config=parameters()
+fixed_settings_note()
 
 if module=='数据与方法说明':
     methods_page()
@@ -31,24 +32,24 @@ elif payload is None:
 else:
     try:
         with st.spinner('校验Excel并准备分析数据…'):
-            bundle=sync_analysis(st.session_state,payload,filename,config)
+            bundle=sync_analysis(st.session_state,payload,filename,DEFAULT_CONFIG)
         st.session_state.source_label=source_label
         if 'font_status' not in st.session_state:
             with PLOT_LOCK:
                 st.session_state.font_status=setup_plotting_style(logging.getLogger('aviation_dashboard'))
         if module=='数据概览':overview(bundle,st.session_state.font_status)
         elif module=='统计表':table_page(bundle)
-        elif module=='单国分析':country_page(bundle)
-        elif module=='多国对比':country_page(bundle,comparison=True)
+        elif module=='国家动态分析':dynamic_page(bundle)
+        elif module=='ASK方向结构':direction_page(bundle)
         else:chart_page(bundle,module)
     except DataInputError as exc:
         st.error('当前Excel或参数未通过校验，尚未生成本次分析结果。')
         for message in exc.messages:st.warning(message)
         st.download_button('下载问题报告',exc.report.encode('utf-8'),'validation_error.txt',on_click='ignore')
         st.info('修正数据或应用新的参数后会自动重新计算；不会显示上一份文件的结果。')
-    except ValueError as exc:
-        logging.getLogger('aviation_dashboard').exception('Invalid analysis parameters')
-        st.error('当前数据或选择无法完成分析，请检查样本覆盖、年份和参数。')
+    except ValueError:
+        logging.getLogger('aviation_dashboard').exception('Analysis result unavailable')
+        st.warning('当前结果暂时无法生成，请检查数据覆盖范围。')
     except Exception:
         incident=uuid.uuid4().hex[:10]
         logging.getLogger('aviation_dashboard').exception('Dashboard operation failed [%s]',incident)

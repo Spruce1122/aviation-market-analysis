@@ -24,9 +24,9 @@ class ChartUnavailable(ValueError):
 def render_chart(bundle, code):
     data = chart_data(bundle, code)
     if data.empty:
-        raise ChartUnavailable('当前数据或参数下没有满足本图条件的有效样本。请检查数据覆盖和样本要求。')
+        raise ChartUnavailable('当前结果暂时无法生成，请检查数据覆盖范围。')
     if code in ('F02','F03') and not data[['ASK_growth','RPK_growth']].notna().any().any():
-        raise ChartUnavailable('当前年份范围内没有有效同比，请调整年份范围。')
+        raise ChartUnavailable('当前结果暂时无法生成，请检查数据覆盖范围。')
     with PLOT_LOCK:
         random_state = np.random.get_state()
         np.random.seed(0)
@@ -44,7 +44,7 @@ def render_chart(bundle, code):
             elif code=='A02': fig=plot_a02(m,c)
             elif code=='A03': fig=plot_a03(m,c)
             else: raise KeyError(code)
-            plt.close(fig)  # Remove pyplot global registry; Figure remains usable by st.pyplot/savefig.
+            plt.close(fig)  # Remove pyplot global registry; Figure remains usable by savefig.
             return fig
         finally:
             np.random.set_state(random_state)

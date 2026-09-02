@@ -26,11 +26,11 @@ def empty_panel():
     st.markdown('<div class="intro-panel"><div class="section-label">从原始数据开始</div>'
                 '<h2>上传一份Excel，展开完整分析</h2>'
                 '<p>数据校验、供需关系、国家动态与方向结构，在同一个工作台中完成。</p>'
-                '<p style="color:#71879b">使用左侧上传框选择数据；或载入原报告基准，先查看全部图表。</p></div>',unsafe_allow_html=True)
+                '<p style="color:#71879b">使用左侧上传框选择数据；网页会在当前会话内完成校验、计算与绘图。</p></div>',unsafe_allow_html=True)
     a,b,c=st.columns(3)
     a.markdown('#### 10张研究图\n统一口径、配色与正式图题')
-    b.markdown('#### 4组统计表\n排序、搜索与Excel下载')
-    c.markdown('#### 国家研究\n单国分析与2—5国对比')
+    b.markdown('#### 4组统计表\n完整排名、筛选与Excel下载')
+    c.markdown('#### 国家动态\n自选1—30国及年份区间')
     with st.expander('查看Excel格式要求',expanded=True):
         st.markdown('**Data**：`Country Name` · `Country Code` · `Time` · `ASKs` · `RPKs`\n\n'
                     '**country_year_ask_capacity**：`country_code` · `country_name` · `year` · `ASK_out` · `ASK_in`\n\n'

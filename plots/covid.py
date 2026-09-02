@@ -94,16 +94,15 @@ def plot_a03(metrics, config=DEFAULT_CONFIG, logger=LOGGER):
 
 
 def _label_representative_points(ax, part: pd.DataFrame, logger: logging.Logger) -> None:
-    labels = []
+    offsets = {"CHN": (5, 7), "USA": (-5, 7), "ZMB": (5, -11)}
     for code in SCATTER_LABEL_COUNTRIES:
         candidate = part.loc[part["Country Code"].eq(code)]
         if candidate.empty:
             continue
         # One label per country per panel: use the largest absolute deviation.
         row = candidate.loc[candidate["growth_gap"].abs().idxmax()]
-        labels.append(
-            ax.text(row["x"], row["y"], code, fontsize=9.0, ha="center", va="bottom", clip_on=True)
-        )
-    adjust_text_labels(labels, ax, logger)
-
+        dx, dy = offsets.get(code, (4, 6))
+        ax.annotate(code, (row["x"], row["y"]), xytext=(dx, dy), textcoords="offset points",
+                    fontsize=8.8, ha="left" if dx >= 0 else "right",
+                    va="bottom" if dy >= 0 else "top", clip_on=True, annotation_clip=True)
 

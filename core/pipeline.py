@@ -43,7 +43,7 @@ def build_analysis(loaded: LoadedWorkbook, config=DEFAULT_CONFIG):
     try:
         metrics = build_country_year_metrics(loaded.data, config)
     except ValueError as exc:
-        raise DataInputError(str(exc) + ' 请在左侧参数中减小大型/小型市场数量后应用。', loaded.report) from exc
+        raise DataInputError(str(exc) + ' 当前固定研究口径要求至少80个可分组国家。', loaded.report) from exc
     all_indices = build_representative_index_data(metrics, sorted(metrics['Country Code'].unique()))
     indices = build_representative_index_data(metrics, config.representative_countries)
     try:

@@ -4,7 +4,7 @@
 
 网页不内置国家排名、市场规模名单、动态分类或历史统计数字。文件内容SHA256变化即视为新数据：清除当前图形、计算结果与导出包，再读取、校验和计算。修改会影响计算的参数也会重新计算。导航、搜索、下载不会重复读取Excel。
 
-正确性前提：原始字段、单位、国家代码和统计覆盖保持一致。程序检验结构与数值规则，无法判断原始数据是否真实，也无法自动识别未声明的单位变化。新增年份请新增行；已有国家—年份应更新原记录，不可追加重复记录。
+正确性前提：原始字段、单位、国家代码和统计覆盖保持一致。程序检验结构与数值规则，无法判断原始数据是否真实，也无法自动识别未声明的单位变化。新增年份请新增行；已有国家—年份应更新原记录，不可追加重复记录。网页研究参数固定，只有“国家动态分析”页的自选国家和年份范围属于展示期交互。
 
 ## 2. 原始字段
 
@@ -58,9 +58,9 @@ PLF精确关系：PLF(t)/PLF(t−1)=(1+RPK_growth)/(1+ASK_growth)。年度普通
 
 ## 5. 市场规模与国家分类
 
-默认Large40 / Small40。分组使用完整输入的平均ASK；仅裁剪趋势图显示年份不会改变分组。合格国家少于两组之和会提示减小参数，不自动改变研究设定。
+默认Large40 / Small40。分组使用完整输入的平均ASK。合格国家少于80国时会停止相关分析，不自动改变研究设定。
 
-F06只使用共同同比有效年数≥4的国家（可在侧栏调整最低年数）。在这些国家上重算四分位数，按以下顺序互斥分类：
+F06只使用所选区间共同同比有效年数≥4的国家。在这些国家上重算四分位数，按以下顺序互斥分类：
 
 1. 长期高同步型：corr≥Q75且mean_abs_gap≤Q25。
 2. ASK相对领先型：median_gap≤Q25。
@@ -77,13 +77,13 @@ F06只使用共同同比有效年数≥4的国家（可在侧栏调整最低年�
 | 编号 | 侧栏模块 / 图 | Sheet与原始列 | 派生与统计 | ZIP内PNG路径 |
 |---|---|---|---|---|
 | F01 | ASK–RPK / 年度增长同步与偏离 | Data!Country Name、Country Code、Time、ASKs、RPKs | 共同同比；x=ASK_growth×100，y=RPK_growth×100；颜色=规模；y=x | figures/core/F01_ASK_RPK年度增长同步与偏离.png |
-| F02 | ASK–RPK / 年度增长趋势 | Data!Country Name、Country Code、Time、ASKs、RPKs | ASK/RPK独立样本按年中位数；可选显示年份 | figures/core/F02_ASK_RPK年度增长率中位数趋势.png |
+| F02 | ASK–RPK / 年度增长趋势 | Data!Country Name、Country Code、Time、ASKs、RPKs | ASK/RPK独立样本按年中位数 | figures/core/F02_ASK_RPK年度增长率中位数趋势.png |
 | F03 | ASK–RPK / 规模市场趋势 | Data!Country Name、Country Code、Time、ASKs、RPKs | 固定规模组内的两类独立同比年度中位数 | figures/core/F03_不同规模市场ASK_RPK增长趋势.png |
 | F04 | ASK–RPK / 规模同步与偏离 | Data!Country Name、Country Code、Time、ASKs、RPKs | 各规模组共同国家—年份的Pearson、平均绝对差、反方向占比；N为观测数 | figures/core/F04_市场规模ASK_RPK同步性与偏离.png |
-| F05 | 国家动态 / 代表国家指数 | Data!Country Name、Country Code、Time、ASKs、RPKs | 同国共同正值基期；ASK_index、RPK_index；可选择1—12国 | figures/core/F05_代表性国家ASK_RPK指数走势.png |
-| F06 | 国家动态 / 动态类型 | Data!Country Name、Country Code、Time、ASKs、RPKs | 横轴corr；纵轴mean_abs_gap×100；面积按n_valid；颜色=分位数分类 | figures/core/F06_国家动态关系类型散点图.png |
-| F07 | ASK方向 / 方向不对称 | country_year_ask_capacity!country_code、country_name、year、ASK_out、ASK_in | 区间同年均值→R→ln_R；两端各9国，可改5/10/15 | figures/core/F07_ASK_out_in方向不对称.png |
-| A01 | 国家动态 / 增长领先比较 | Data!Country Name、Country Code、Time、ASKs、RPKs | median_growth_gap两端各10国，去重；n≥max(4,动态门槛) | figures/additional/A01_国家层面ASK_RPK增长领先比较.png |
+| F05 | 国家动态 / 自选国家指数 | Data!Country Name、Country Code、Time、ASKs、RPKs | 选1—30国；所选区间首次共同正值年为基期；ASK_index、RPK_index | figures/core/F05_自选国家ASK_RPK指数走势.png |
+| F06 | 国家动态 / 动态类型 | Data!Country Name、Country Code、Time、ASKs、RPKs | 所选区间重算corr、绝对差和分类阈值；全体合格国绘制，自选国高亮 | figures/core/F06_国家动态关系类型散点图.png |
+| F07 | ASK方向 / 方向不对称 | country_year_ask_capacity!country_code、country_name、year、ASK_out、ASK_in | 固定2000—2019成对均值→R→ln_R；自动取两端各9国 | figures/core/F07_ASK_out_in方向不对称.png |
+| A01 | 国家动态 / 增长领先比较 | Data!Country Name、Country Code、Time、ASKs、RPKs | 所选区间median_growth_gap两端各10国，去重；n≥4 | figures/additional/A01_国家层面ASK_RPK增长领先比较.png |
 | A02 | 疫情 / PLF变化 | Data!Country Name、Country Code、Time、ASKs、RPKs | 严格时期平衡样本；国别疫情前PLF中位数→跨国中位数与Q25/Q75 | figures/additional/A02_疫情冲击前后PLF变化.png |
 | A03 | 疫情 / 增长关系 | Data!Country Name、Country Code、Time、ASKs、RPKs | 三时期各自共同同比点，不平衡；同坐标尺度，y=x | figures/additional/A03_疫情前后ASK_RPK增长关系.png |
 
@@ -108,11 +108,9 @@ A03：疫情前2016—2019、2020、2021分别使用共同同比样本。疫情�
 
 T01的mean_ASK使用排名固定期共同年份，与市场规模分组使用全样本期ASK的mean_ASK不同。T02标题沿用原版，表内为所有年份合并统计。
 
-## 9. 单国分析与多国对比
+## 9. 国家动态页交互
 
-使用 `core/view_data.py` 从已计算DataFrame读取和汇总，不重新定义指标。平均ASK、RPK各按全样本期非缺失水平值；PLF显示有效年度PLF中位数并列有效年数。动态指标若未达到门槛则为空；方向指标按当前方向区间。指数调用共同正值基期指标，多国之间可能基期不同。
-
-单国包含原始水平、指数、年度增长差三张面板；多国可选2—5国。各页面支持数据CSV、XLSX和图PNG/PDF下载。
+国家选择器覆盖Data中的全部国家，支持按国家名或ISO检索，最少1国、最多30国。布局随国家数自动变化：1—4国最多2×2，5—6国2×3，7—12国3×4，13—20国4×5，21—30国5×6。F05对每个国家在所选区间重设共同正值基期；若某国无有效基期，网页黄色提示。F06和A01只用所选区间，但增长率仍先在完整序列计算，避免把区间首年错误设为缺失。
 
 ## 10. 关键中间数据
 
@@ -131,12 +129,12 @@ T01的mean_ASK使用排名固定期共同年份，与市场规模分组使用全
 
 | 参数 | 默认 | 影响 |
 |---|---|---|
-| N_LARGE / N_SMALL | 40 / 40 | F01、F03、F04、A02组别及国别页面 |
-| ASK_DIRECTION_START / END | 2000 / 2019 | F07、T03、T04、国别方向指标 |
+| N_LARGE / N_SMALL | 40 / 40 | F01、F03、F04、A02组别；网页固定 |
+| ASK_DIRECTION_START / END | 2000 / 2019 | F07、T03、T04；网页固定 |
 | TOP_DIRECTION_N | 9 | F07、T03每侧数量 |
-| MIN_DYNAMIC_VALID_YEARS | 4 | F06、A01、国别动态指标 |
-| 代表国家 | 原报告12国 | F05及当前完整导出中的代表指数文件 |
-| 趋势显示年份 | 完整有效范围 | 只影响F02、F03；先算同比后截取 |
+| MIN_DYNAMIC_VALID_YEARS | 4 | F06、A01；网页固定 |
+| 自选国家 | 默认原报告12国，可选1—30国 | F05展示与F06高亮 |
+| 国家动态年份 | 完整有效范围，可在该页选择 | F05、F06、A01；先算同比后截取 |
 | 疫情期 | 2016—2019 / 2020 / 2021 | A02、A03，固定研究设定 |
 | T01排名期 / 最低年数 | 2016—2021 / 5 | T01，固定研究设定 |
 | DPI | 350 | 全部PNG质量 |
@@ -147,6 +145,4 @@ T01的mean_ASK使用排名固定期共同年份，与市场规模分组使用全
 
 默认口径基准：4732行、182国；共同同比777条；Large40 / Medium78 / Small40；PLF平衡113国；方向233国。数字仅用于测试断言，不参与网页计算。
 
-`reference/src/` 保留原代码只供回归测试，不被网页调用。测试会对比原/新中间指标、T01—T04表格及图形数据标记；另覆盖文件内容更改、新年份、新国家、行序打乱、参数失效及错误Excel。
-
-详情见 `test_results/TEST_REPORT.md`。同一数据和默认配置下统计结果一致；不同电脑字体或标签避让版本可能产生轻微文字位置差异，不能承诺PNG二进制完全相同。
+自动化测试覆盖10张图、4组表、同名文件更新、会话隔离、缺失方向Sheet、30国布局、区间基期、动态阈值和静态HTML结果渲染约束。同一数据和默认配置下统计结果一致；不同服务器字体可能产生轻微文字位置差异，不能承诺PNG二进制完全相同。

@@ -15,7 +15,7 @@ LOGGER = logging.getLogger("aviation_dashboard")
 def plot_f07(direction_low, direction_high, config=DEFAULT_CONFIG, logger=LOGGER):
     data = pd.concat([direction_low, direction_high], ignore_index=True).drop_duplicates("country_code").sort_values(["ln_R", "country_code"])
     colors = [COLORS[group] for group in data["extreme_group"]]
-    fig, ax = plt.subplots(figsize=(10.0, max(8.6, len(data) * 0.40 + 1.4)))
+    fig, ax = plt.subplots(figsize=(11.5, max(8.6, len(data) * 0.43 + 1.8)))
     bars = ax.barh(data["country_name"], data["ln_R"], color=colors, height=0.68, edgecolor="white")
     ax.axvline(0, color="#666C72", lw=1.0)
     style_axis(ax, "x")
@@ -34,8 +34,9 @@ def plot_f07(direction_low, direction_high, config=DEFAULT_CONFIG, logger=LOGGER
         )
     ax.text(0.02, 1.015, "ASK_in相对占优", transform=ax.transAxes, color=COLORS["ASK_in相对占优"], ha="left")
     ax.text(0.98, 1.015, "ASK_out相对占优", transform=ax.transAxes, color=COLORS["ASK_out相对占优"], ha="right")
-    fig.subplots_adjust(left=0.29, right=0.94, top=0.91, bottom=0.14)
+    max_name = max((len(str(name)) for name in data["country_name"]), default=12)
+    left = min(0.39, max(0.25, 0.21 + max_name * 0.0045))
+    fig.subplots_adjust(left=left, right=0.94, top=0.91, bottom=0.14)
     add_bottom_title(fig, "图7 ASK_out与ASK_in方向不对称国家比较", 0.014)
     return fig
-
 

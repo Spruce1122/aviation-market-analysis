@@ -12,11 +12,18 @@ from plots.style import (COLORS, MARKET_LABELS, add_bottom_title, adjust_text_la
                          percent_formatter, robust_common_limits, style_axis)
 LOGGER = logging.getLogger("aviation_dashboard")
 
+def _layout(n):
+    if n <= 4: return math.ceil(n / 2), min(2, n)
+    if n <= 6: return 2, 3
+    if n <= 12: return 3, 4
+    if n <= 20: return 4, 5
+    return 5, 6
+
+
 def plot_f05(index_data, config=DEFAULT_CONFIG, logger=LOGGER):
     countries = config.representative_countries
-    rows = max(1, math.ceil(len(countries) / 3))
-    cols = min(3, max(1, len(countries)))
-    fig, axes = plt.subplots(rows, cols, figsize=(12.4 if cols == 3 else 4.2 * cols, 12.8 if rows == 4 else max(4.2, rows * 3.2)), sharex=True, squeeze=False)
+    rows, cols = _layout(len(countries))
+    fig, axes = plt.subplots(rows, cols, figsize=(max(7.2, cols * 3.25), max(4.8, rows * 2.7)), sharex=True, squeeze=False)
     axes_flat = axes.ravel()
     for ax, code in zip(axes_flat, countries):
         part = index_data.loc[index_data["Country Code"].eq(code)].sort_values("Time")
@@ -29,6 +36,7 @@ def plot_f05(index_data, config=DEFAULT_CONFIG, logger=LOGGER):
             ax.axhline(100, color=COLORS["reference"], lw=0.8, ls="--")
             ax.set_title(f"{part['Country Name'].iloc[0]} ({code})", pad=8)
         ax.xaxis.set_major_locator(MaxNLocator(integer=True, nbins=4))
+        ax.tick_params(labelsize=8.2)
         style_axis(ax, "y")
     for ax in axes_flat[len(countries):]:
         ax.set_visible(False)
@@ -42,8 +50,7 @@ def plot_f05(index_data, config=DEFAULT_CONFIG, logger=LOGGER):
         Line2D([0], [0], color=COLORS["RPK"], marker="s", lw=2, label="RPK"),
     ]
     fig.legend(handles=handles, loc="upper center", bbox_to_anchor=(0.5, 0.985), ncol=2, frameon=False)
-    fig.subplots_adjust(left=0.085, right=0.985, top=0.93, bottom=0.09, wspace=0.22, hspace=0.34)
-    add_bottom_title(fig, "图5 代表性国家ASK与RPK指数走势", 0.014)
+    fig.subplots_adjust(left=0.07, right=0.99, top=0.93, bottom=0.085, wspace=0.24, hspace=0.40)
+    add_bottom_title(fig, "图5 自选国家ASK/RPK指数走势", 0.012)
     return fig
-
 

@@ -12,7 +12,7 @@ from plots.style import (COLORS, MARKET_LABELS, add_bottom_title, adjust_text_la
                          percent_formatter, robust_common_limits, style_axis)
 LOGGER = logging.getLogger("aviation_dashboard")
 
-def plot_f06(country_dynamic, config=DEFAULT_CONFIG, logger=LOGGER):
+def plot_f06(country_dynamic, config=DEFAULT_CONFIG, logger=LOGGER, highlight_codes=None):
     plot_data = country_dynamic.dropna(subset=["corr_ask_rpk", "mean_abs_growth_gap"]).copy()
     plot_data["gap_pp"] = plot_data["mean_abs_growth_gap"] * 100
     n_min, n_max = plot_data["n_valid"].min(), plot_data["n_valid"].max()
@@ -37,10 +37,16 @@ def plot_f06(country_dynamic, config=DEFAULT_CONFIG, logger=LOGGER):
     style_axis(ax, "both")
     ax.legend(loc="upper center", bbox_to_anchor=(0.5, 1.11), ncol=min(5, len(present_types)), frameon=False)
 
-    label_codes = set(F06_FIXED_LABEL_COUNTRIES)
-    label_codes.update(plot_data.nlargest(F06_AUTO_LABEL_EACH_TAIL, "mean_abs_growth_gap")["Country Code"])
-    label_codes.update(plot_data.nsmallest(F06_AUTO_LABEL_EACH_TAIL, "corr_ask_rpk")["Country Code"])
+    label_codes = set(highlight_codes or [])
+    if not label_codes:
+        label_codes = set(F06_FIXED_LABEL_COUNTRIES)
+        label_codes.update(plot_data.nlargest(F06_AUTO_LABEL_EACH_TAIL, "mean_abs_growth_gap")["Country Code"])
+        label_codes.update(plot_data.nsmallest(F06_AUTO_LABEL_EACH_TAIL, "corr_ask_rpk")["Country Code"])
     label_data = plot_data.loc[plot_data["Country Code"].isin(label_codes)].copy()
+    selected = plot_data.loc[plot_data["Country Code"].isin(set(highlight_codes or []))]
+    if not selected.empty:
+        ax.scatter(selected["corr_ask_rpk"], selected["gap_pp"], s=selected["point_size"]+75,
+                   facecolors="none", edgecolors="#111111", linewidths=1.5, zorder=5)
     texts = []
     for _, row in label_data.iterrows():
         right_side = row["corr_ask_rpk"] > 0.75
@@ -55,5 +61,4 @@ def plot_f06(country_dynamic, config=DEFAULT_CONFIG, logger=LOGGER):
     fig.subplots_adjust(left=0.11, right=0.98, top=0.84, bottom=0.15)
     add_bottom_title(fig, "图6 国家动态关系类型散点图", 0.018)
     return fig
-
 
