@@ -24,6 +24,8 @@ def apply_theme():
     .safe-result-table td:not(:first-child){text-align:right}.safe-table-caption{font-size:.82rem;color:#67747f;margin-top:.4rem}
     .safe-message{padding:11px 14px;border-radius:5px;margin:.6rem 0;border:1px solid #dce3e8;background:#f7f9fa}
     .safe-message-warning{background:#fff8df;border-color:#ebd786;color:#654f08}.safe-message-success{background:#edf7f0;border-color:#bddbc5;color:#285d37}
+    .analysis-context{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;padding:10px 13px;margin:.55rem 0 1rem;background:#f3f5f6;border-left:4px solid #1f4e79;border-radius:4px;color:#34424d}
+    .analysis-context-title{font-weight:700;margin-right:4px}.analysis-chip{font-size:.88rem}
     .brand-kicker {font-size:.73rem;letter-spacing:.16em;color:#71879b;font-weight:600;margin-bottom:5px;}
     .site-title {font-size:1.85rem;line-height:1.35;margin:0 0 .35rem;font-weight:700;}
     .site-subtitle {color:#71879b;font-size:.98rem;margin:0 0 1.25rem;letter-spacing:.04em;}

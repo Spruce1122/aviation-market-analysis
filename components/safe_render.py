@@ -31,7 +31,8 @@ def render_kpi_cards(cards: Iterable[tuple[str, object] | tuple[str, object, str
 def figure_png_bytes(fig, dpi: int = 170) -> bytes:
     output = BytesIO()
     with PLOT_LOCK:
-        fig.savefig(output, format="png", dpi=dpi, bbox_inches="tight", facecolor="white")
+        bbox = None if getattr(fig, "_aviation_native_bbox", False) else "tight"
+        fig.savefig(output, format="png", dpi=dpi, bbox_inches=bbox, facecolor="white")
     return output.getvalue()
 
 
@@ -84,5 +85,16 @@ def render_message(message: str, kind: str = "info") -> None:
     safe_kind = kind if kind in {"info", "success", "warning"} else "info"
     st.markdown(
         f'<div class="safe-message safe-message-{safe_kind}">{escape(message)}</div>',
+        unsafe_allow_html=True,
+    )
+
+
+def render_analysis_context(title: str, items: Iterable[tuple[str, object]]) -> None:
+    chips = ''.join(
+        f'<span class="analysis-chip"><b>{escape(str(label))}</b>：{escape(str(value))}</span>'
+        for label, value in items
+    )
+    st.markdown(
+        f'<div class="analysis-context"><div class="analysis-context-title">{escape(title)}</div>{chips}</div>',
         unsafe_allow_html=True,
     )

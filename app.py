@@ -12,7 +12,7 @@ from core.data_loader import DataInputError
 from components.theme import apply_theme,header
 from components.upload_panel import upload_panel,empty_panel
 from components.sidebar import navigation,fixed_settings_note
-from components.pages import overview,chart_page,table_page,dynamic_page,direction_page,methods_page
+from components.pages import overview,chart_page,table_page,dynamic_page,direction_page,period_page,methods_page
 from plots.style import setup_plotting_style
 from plots.registry import PLOT_LOCK
 
@@ -41,6 +41,7 @@ else:
         elif module=='统计表':table_page(bundle)
         elif module=='国家动态分析':dynamic_page(bundle)
         elif module=='ASK方向结构':direction_page(bundle)
+        elif module=='时期扩展分析':period_page(bundle)
         else:chart_page(bundle,module)
     except DataInputError as exc:
         st.error('当前Excel或参数未通过校验，尚未生成本次分析结果。')

@@ -1,148 +1,181 @@
-# 数据与图表使用说明
+# 数据、指标与图表使用说明（参数化网页版本）
 
-## 1. 更新Excel后的正确性边界
+## 1. 使用边界
 
-网页不内置国家排名、市场规模名单、动态分类或历史统计数字。文件内容SHA256变化即视为新数据：清除当前图形、计算结果与导出包，再读取、校验和计算。修改会影响计算的参数也会重新计算。导航、搜索、下载不会重复读取Excel。
+网页不保存固定排名、国家名单或历史结果。使用者上传 `.xlsx` 后，系统只在当前浏览器会话内校验、计算、绘图和导出；上传内容不写入仓库或公共结果目录，也不供其他会话复用。文件内容 SHA256 或任一分析参数变化后，相关结果重新计算。
 
-正确性前提：原始字段、单位、国家代码和统计覆盖保持一致。程序检验结构与数值规则，无法判断原始数据是否真实，也无法自动识别未声明的单位变化。新增年份请新增行；已有国家—年份应更新原记录，不可追加重复记录。网页研究参数固定，只有“国家动态分析”页的自选国家和年份范围属于展示期交互。
+所有 F01—F07、A01—A03、T01—T04 都使用各页面当前选择的开始、结束年份。历史区间只用于初始化控件，不能覆盖用户选择：
 
-## 2. 原始字段
+- 开始年份等于结束年份：单年模式，水平变量直接使用当年值。
+- 开始年份小于结束年份：多年平均模式，水平变量使用该国所选年份内有效观测的算术平均；缺失年份不插值。
+- 同比先在每个国家的完整时间序列计算，再筛选时期。例如选择2016—2020时，2016年同比仍使用2015年数据。
+- Large / Medium / Small 按完整上传样本的国家平均ASK固定分组，时间选择不会重新分组。
 
-上传文件名可任意，但必须为`.xlsx`。云部署仓库不包含基准Excel，所有分析均来自当前浏览器会话上传的工作簿。
+正确性的前提是工作表、字段、单位和国家代码口径保持一致。程序能发现缺列、重复、错误年份、负值和部分覆盖问题，但不能判断上游数据是否真实，也不能自动识别未声明的单位变化。
 
-| Sheet | 原始字段 | 说明 |
+## 2. 原始工作表和字段
+
+| Sheet | 必需字段 | 用途 |
 |---|---|---|
-| Data | Country Name / Country Code | 国家名称 / 三位国家代码 |
-| Data | Time | 整数年份 |
-| Data | ASKs | 可用座公里，沿用原始单位 |
-| Data | RPKs | 收入客公里，必须与ASK单位兼容 |
-| country_year_ask_capacity | country_code / country_name / year | 国家代码 / 名称 / 整数年份 |
-| country_year_ask_capacity | ASK_out / ASK_in | 出发 / 抵达方向ASK，沿用既有汇总口径 |
+| `Data` | `Country Name`, `Country Code`, `Time`, `ASKs`, `RPKs` | F01—F06、A01—A03、T01—T02 |
+| `country_year_ask_capacity` | `country_code`, `country_name`, `year`, `ASK_out`, `ASK_in` | F07、T03—T04 |
 
-国际航段与国内航段的覆盖应在上游数据中确认，网页仅使用已汇总的ASK_out/ASK_in，不能从汇总值重新判断航段类型。其余Sheet不参与计算。
+`Data`必须存在。方向工作表可以缺失；缺失时ASK/RPK模块仍可用，F07、T03、T04显示明确提示而不补造结果。其余Sheet不参与计算。
 
-## 3. 校验与清洗
+## 3. 自动数据校验
 
-- Data及其5个字段必需；方向Sheet缺失时只开放ASK/RPK分析，F07、T03、T04不可用。
-- 同一国家同一年不得重复；名称、代码和年份不得为空，年份须为整数。
-- ASKs、RPKs、ASK_out、ASK_in不得为负数、无穷值或非数值文字；`..`作为WDI缺失标记。
-- 0保留原值，不转换后插值；完全空白观测行排除。
-- 仅当其他分析字段全空时，识别并排除以 `Data from database:`、`Last Updated:` 开头的来源页脚，并写入报告；不自动删掉其他异常行。
-- 报告记录非缺失、正值、零值数、代码格式、重复记录、正值年份覆盖及各年覆盖。
-- 数据不足时显示原因，不补齐不存在的历史年份。
+- 国家名称、三位代码和年份不得为空；年份必须能无损转换为整数。
+- 同一国家代码—年份不得重复。
+- ASK、RPK、ASK_out、ASK_in不得为负数、无穷值或不可识别的文字；`..`按缺失处理。
+- 原始0值保留，不自动转成缺失后插值；所有缺失年份均不插值。
+- 完全空白行和可识别的WDI来源页脚不参与计算，并记录在校验报告中。
+- 报告记录缺失、正值、零值、代码格式、时间覆盖、正值年份范围和各年有效国家数。
 
-## 4. 公共指标
+## 4. 公共指标和单位
 
-| 指标 | 公式 / 规则 |
-|---|---|
-| ASK_growth | ASK(t)/ASK(t−1)−1；同国年份连续，两个ASK均>0 |
-| RPK_growth | RPK(t)/RPK(t−1)−1；同国年份连续，两个RPK均>0；独立计算 |
-| common_growth_sample | ASK与RPK同比同时有效；包含增长和下降，不仅是正增长 |
-| growth_gap | RPK_growth−ASK_growth；乘100为百分点，不是PLF百分点变化 |
-| abs_growth_gap | abs(growth_gap) |
-| PLF | RPK/ASK×100；基础字段要求ASK>0且RPK非缺失。疫情样本另限0<PLF≤100% |
-| mean_ASK / market_size_group | 全样本期每国非缺失ASK均值；按均值降序、ISO升序；前N_LARGE大型、后N_SMALL小型，其余中型 |
-| same / opposite direction | 严格正负判断；零增长未进入严格类别但仍在共同样本分母 |
-| ASK_index / RPK_index | 每国首次两项均>0年份为共同基期，各自除以基期水平×100；不跨缺失值插值 |
-| corr_ask_rpk | 每国共同同比观测的Pearson相关系数 |
-| median_growth_gap | 每国共同同比观测growth_gap中位数 |
-| mean_abs_growth_gap | 每国共同同比观测abs_growth_gap均值 |
-| opposite_share | 共同同比观测中严格反方向所占比例 |
-| growth_gap_std | growth_gap样本标准差，ddof=1 |
-| n_valid | 每国共同同比有效年份数 |
-| mean_ASK_out / mean_ASK_in | 当前方向分析区间中，两项同时非缺失年份的各自均值；0可参与均值 |
-| R / ln_R | 均值均>0时R=mean_ASK_out/mean_ASK_in；ln_R=自然对数ln(R) |
-| weighted_PLF | T01共同正值样本的ΣRPK/ΣASK×100 |
+| 指标 | 计算规则 | 有效要求 |
+|---|---|---|
+| `ASK_growth` | ASK(t) / ASK(t−1) − 1 | 同国相邻自然年连续，两个ASK均>0 |
+| `RPK_growth` | RPK(t) / RPK(t−1) − 1 | 同国相邻自然年连续，两个RPK均>0；独立计算 |
+| `common_growth_sample` | 两项同比同时有效 | 包含增长、下降和零增长 |
+| `growth_gap` | RPK_growth − ASK_growth | 展示时乘100，单位为百分点 |
+| `abs_growth_gap` | abs(growth_gap) | 同上 |
+| `PLF` | RPK / ASK × 100 | ASK>0、RPK非缺失；A02另限0<PLF≤100 |
+| `same_direction` | ASK与RPK同比严格同号 | 两项同比同时有效 |
+| `opposite_direction` | ASK与RPK同比严格异号 | 两项同比同时有效 |
+| `market_size_group` | 完整样本期国家平均ASK：前40 Large、后40 Small、其余Medium | 有平均ASK |
+| `ASK_index`, `RPK_index` | 各自除以所选区间第一个ASK、RPK共同正值年的水平×100 | 存在共同正值基期 |
+| `corr_ask_rpk` | 所选期内该国ASK/RPK同比Pearson相关 | F06至少3个共同有效同比年份 |
+| `median_growth_gap` | 该国所选期growth_gap中位数 | 同上 |
+| `mean_abs_growth_gap` | 该国所选期abs_growth_gap均值 | 同上 |
+| `opposite_share` | 该国反方向观测/共同同比观测 | 同上 |
+| `growth_gap_std` | growth_gap样本标准差（ddof=1） | 同上 |
+| `R` | ASK_out / ASK_in；多年为mean(ASK_out) / mean(ASK_in) | 两个均值均>0 |
+| `ln_R` | ln(R) | R>0 |
 
-PLF精确关系：PLF(t)/PLF(t−1)=(1+RPK_growth)/(1+ASK_growth)。年度普通增长差的正负对应PLF升降，但数值不等于PLF百分点变化。
+网页所有水平值统一展示为ASK、RPK、ASK_out、ASK_in除以`1e8`。ASK与方向ASK标注“亿座公里”，RPK标注“亿客公里”。底层原始数据不改单位。
 
-## 5. 市场规模与国家分类
+## 5. 图表索引与用户参数
 
-默认Large40 / Small40。分组使用完整输入的平均ASK。合格国家少于80国时会停止相关分析，不自动改变研究设定。
+| 编号 | 页面与图名 | 国家参数 | 时间参数 | 其他参数 |
+|---|---|---|---|---|
+| F01 | ASK–RPK供需关系 / ASK与RPK年度增长同步与偏离 | 可选标注国家 | 开始、结束年份 | 不标注 / 选择国家 / 偏离最大10国 |
+| F02 | ASK–RPK供需关系 / 年度增长率趋势 | 全部有效国家 | 开始、结束年份 | 无 |
+| F03 | ASK–RPK供需关系 / 不同规模市场增长趋势 | 全部有效国家 | 开始、结束年份 | 固定规模组 |
+| F04 | ASK–RPK供需关系 / 市场规模同步性与偏离 | 全部有效国家 | 开始、结束年份 | 固定规模组 |
+| A01 | 国家动态分析 / 自选国家ASK/RPK规模比较 | 1—30国 | 开始、结束年份 | 绝对规模 / 指数化比较 |
+| F05 | 国家动态分析 / 自选国家ASK/RPK指数走势 | 1—30国，与A01/F06共用 | 开始、结束年份 | 单年自动切换规模比较 |
+| F06 | 国家动态分析 / 国家动态关系类型 | 1—30国高亮，与A01/F05共用 | 开始、结束年份 | 当前期阈值；至少3个有效同比年份 |
+| F07 | ASK方向结构 / ASK_out与ASK_in方向不对称 | 1—30国 | 开始、结束年份 | 按ln(R)、ASK规模或国家名称排序 |
+| A02 | 时期扩展分析 / 所选时期PLF变化 | 全部有效国家 | 开始、结束年份 | 规模组比较 |
+| A03 | 时期扩展分析 / 所选时期ASK/RPK增长关系 | 全部有效国家 | 开始、结束年份 | 最多6个年份面板 |
 
-F06只使用所选区间共同同比有效年数≥4的国家。在这些国家上重算四分位数，按以下顺序互斥分类：
+## 6. 逐图计算说明
+
+### F01 ASK与RPK年度增长同步与偏离
+
+原始字段：`Data!Country Name`, `Country Code`, `Time`, `ASKs`, `RPKs`。单年每国一个点，X、Y为该年ASK、RPK同比×100；多年每国仍只有一个点，X、Y为该国所选年份有效同比的算术平均×100，并保留有效年份数。颜色为固定市场组，虚线为y=x。下载：`F01_<时期>.png/.pdf/.csv`，CSV增长率已转换为百分数。
+
+### F02 ASK/RPK年度增长率趋势
+
+原始字段同F01。对所选每年分别计算ASK独立同比样本中位数、RPK独立同比样本中位数及各自N。单年允许显示一个点并提示“单年趋势只有一个时间点”。图和下载不出现区间外年份。下载：`F02_<时期>.*`。
+
+### F03 不同规模市场ASK/RPK增长趋势
+
+原始字段同F01。在固定Large/Medium/Small组内，按所选每年分别计算ASK和RPK独立同比中位数与N。时间改变只改变显示期和年度结果，不改变国家分组。下载：`F03_<时期>.*`。
+
+### F04 市场规模ASK/RPK同步性与偏离
+
+原始字段同F01，只使用两项同比同时有效观测。单年在该年各规模组的国家截面上计算Pearson相关、平均绝对增长差、反方向比例；多年在所选期每组全部有效国家—年份上重算。下载表同时提供有效国家数和N。下载：`F04_<时期>.*`。
+
+### A01 自选国家ASK/RPK规模比较
+
+原始字段：`Data!Country Name`, `Country Code`, `Time`, `ASKs`, `RPKs`。单年直接读取所选国家当年ASK和RPK；多年分别取所选年份内正值观测算术平均。展示单位为亿座公里、亿客公里，下载表保留有效年份覆盖。指数化比较使用所选区间首个ASK/RPK共同正值年作为基期100。下载：`A01_<ISO列表或国家数>_<时期>.*`。
+
+### F05 自选国家ASK/RPK指数走势
+
+国家与年份继承国家动态页统一控件。多年在所选区间重新寻找每国首个共同正值基期，只绘制所选年份。单年不画无意义的100水平线，自动调用A01当年规模比较并提示。下载：`F05_<ISO列表或国家数>_<时期>.*`。
+
+### F06 国家动态关系类型
+
+同比先在完整国家序列计算，随后仅用所选时期重算corr、增长差、绝对差、反方向比例、标准差和n_valid。当前期合格国家用于重算四分位阈值与分类；用户所选国家只负责高亮。每国至少3个共同有效同比年份；选择区间不足时显示黄色方法提示，不沿用旧图、不扩大年份。下载：`F06_<ISO列表或国家数>_<时期>.*`。
+
+### F07 ASK_out与ASK_in方向不对称
+
+原始字段：方向Sheet的5个字段。单年R=ASK_out/ASK_in；多年先分别求有效ASK_out、ASK_in算术平均，再算`R=mean(ASK_out)/mean(ASK_in)`，禁止先算逐年R再平均。仅绘制用户选择国家；ln(R)=0表示两侧对称，条末显示R。下载表含时期、两侧ASK、R、ln(R)、有效年份数。下载：`F07_<国家数>countries_<时期>.*`。
+
+### A02 所选时期PLF变化
+
+每年使用当年满足0<PLF≤100%的国家，计算跨国中位数、25%和75%分位数及N，并计算固定规模组中位数。多年形成逐年趋势；单年显示当年总体分布和三组比较。该图不再使用固定疫情平衡样本。下载：`A02_<时期>.*`。
+
+### A03 所选时期ASK/RPK增长关系
+
+每个展示年份独立使用当年共同同比样本，X=ASK同比×100，Y=RPK同比×100，颜色为固定市场组，参考线y=x。单年一个面板；多年最多6个面板。区间超过6年时从区间年份中选择展示年份。下载文件名包含时期和实际展示年份。
+
+## 7. 统计表计算与下载
+
+### T01 ASK/RPK排名与国家年度查询
+
+参数为排名指标ASK/RPK、开始/结束年份、前N名（1至当前有效国家总数）。单年按该年正值直接排名；多年按所选期正值观测算术平均排名。另一项水平指标也按各自有效年份平均；区间PLF为共同正值观测的`ΣRPK/ΣASK×100`。有效年份显示为`实际/区间总年份`。CSV只含当前TopN，XLSX含当前时期全部有效国家，列名注明亿座公里/亿客公里。
+
+国家年度查询独立选择国家和年份，显示ASK、RPK、当年X/N排名、排名百分位、两项同比和PLF；缺数据或缺上一连续年度时显示原因。下载：`T01_<指标>_Top<N>_<时期>.csv/.xlsx`。
+
+### T02 ASK/RPK年度变化方向
+
+只使用所选期共同同比有效国家—年份。单年统计该年，多年汇总全部所选国家—年份。汇总显示四种方向、同方向和反方向数量与比例；明细显示国家、ISO、年份、两项同比、增长差和类型。下载：`T02_<模式>_<时期>.csv`。
+
+### T03 ASK方向极端不对称国家
+
+按F07公式重算当前时期全部有效国家。用户输入每侧N，从ln(R)最低端和最高端各取N国；页面固定解释R和ln(R)。下载：`T03_extreme<N>_<时期>.xlsx`。
+
+### T04 ASK_out / ASK_in排名
+
+参数为ASK_out/ASK_in、开始/结束年份、TopN。单年按当年值排序，多年按所选期均值排序；表中显示另一侧ASK、R、ln(R)、有效年份数，单位为亿座公里。下载：`T04_<指标>_Top<N>_<时期>.xlsx`。
+
+## 8. F06分类顺序
+
+保留`n_valid≥3`的国家并计算当前期四分位阈值，按以下顺序互斥分类：
 
 1. 长期高同步型：corr≥Q75且mean_abs_gap≤Q25。
-2. ASK相对领先型：median_gap≤Q25。
-3. RPK相对领先型：median_gap≥Q75。
-4. 高波动型：mean_abs_gap、opposite_share、gap_std任一≥各自Q75。
+2. ASK相对领先型：median_growth_gap≤Q25。
+3. RPK相对领先型：median_growth_gap≥Q75。
+4. 高波动型：mean_abs_gap、opposite_share、growth_gap_std任一≥各自Q75。
 5. 过渡型：其余国家。
 
-“长期”为沿用图中类型名称，结论只覆盖实际有效年份，不代表更长历史期的因果特征。
+“长期”只是类型名称，结论仅覆盖用户选择时期。
 
-## 6. 逐图数据血缘与下载路径
+## 9. 页面状态、缓存和恢复默认
 
-以下路径位于网页下载的 `results.zip` 内。每张图有同名350 DPI PNG及 `figures/vector/` PDF；精确绘图输入见 `figure_data/<编号>_data.csv`。网页显示与下载调用同一Matplotlib Figure。
+- ASK–RPK图、国家动态、方向、时期扩展、T01、T02、T03、T04使用独立年份session key。
+- 图缓存键包含图号、上传文件digest、国家、年份及标签、排序、展示年份等其他参数。参数改变不会继续显示旧图。
+- 各主要模块均可恢复默认。默认值只用于初始化，用户修改后严格使用用户参数。
+- 上传新Excel或清除会话会释放旧Figure和派生数据，不使用跨用户共享数据缓存。
 
-| 编号 | 侧栏模块 / 图 | Sheet与原始列 | 派生与统计 | ZIP内PNG路径 |
-|---|---|---|---|---|
-| F01 | ASK–RPK / 年度增长同步与偏离 | Data!Country Name、Country Code、Time、ASKs、RPKs | 共同同比；x=ASK_growth×100，y=RPK_growth×100；颜色=规模；y=x | figures/core/F01_ASK_RPK年度增长同步与偏离.png |
-| F02 | ASK–RPK / 年度增长趋势 | Data!Country Name、Country Code、Time、ASKs、RPKs | ASK/RPK独立样本按年中位数 | figures/core/F02_ASK_RPK年度增长率中位数趋势.png |
-| F03 | ASK–RPK / 规模市场趋势 | Data!Country Name、Country Code、Time、ASKs、RPKs | 固定规模组内的两类独立同比年度中位数 | figures/core/F03_不同规模市场ASK_RPK增长趋势.png |
-| F04 | ASK–RPK / 规模同步与偏离 | Data!Country Name、Country Code、Time、ASKs、RPKs | 各规模组共同国家—年份的Pearson、平均绝对差、反方向占比；N为观测数 | figures/core/F04_市场规模ASK_RPK同步性与偏离.png |
-| F05 | 国家动态 / 自选国家指数 | Data!Country Name、Country Code、Time、ASKs、RPKs | 选1—30国；所选区间首次共同正值年为基期；ASK_index、RPK_index | figures/core/F05_自选国家ASK_RPK指数走势.png |
-| F06 | 国家动态 / 动态类型 | Data!Country Name、Country Code、Time、ASKs、RPKs | 所选区间重算corr、绝对差和分类阈值；全体合格国绘制，自选国高亮 | figures/core/F06_国家动态关系类型散点图.png |
-| F07 | ASK方向 / 方向不对称 | country_year_ask_capacity!country_code、country_name、year、ASK_out、ASK_in | 固定2000—2019成对均值→R→ln_R；自动取两端各9国 | figures/core/F07_ASK_out_in方向不对称.png |
-| A01 | 国家动态 / 增长领先比较 | Data!Country Name、Country Code、Time、ASKs、RPKs | 所选区间median_growth_gap两端各10国，去重；n≥4 | figures/additional/A01_国家层面ASK_RPK增长领先比较.png |
-| A02 | 疫情 / PLF变化 | Data!Country Name、Country Code、Time、ASKs、RPKs | 严格时期平衡样本；国别疫情前PLF中位数→跨国中位数与Q25/Q75 | figures/additional/A02_疫情冲击前后PLF变化.png |
-| A03 | 疫情 / 增长关系 | Data!Country Name、Country Code、Time、ASKs、RPKs | 三时期各自共同同比点，不平衡；同坐标尺度，y=x | figures/additional/A03_疫情前后ASK_RPK增长关系.png |
+## 10. 默认设置及影响
 
-F01/A03的1%—99%分位及6%留白仅限定画面范围，界外点仍保留在下载数据和统计分母中。
+| 设置 | 默认 | 影响 |
+|---|---:|---|
+| `N_LARGE`, `N_SMALL` | 40, 40 | 固定规模组；影响F01、F03、F04、F06、A02、A03 |
+| 国家动态国家/时期 | 原报告代表国家/完整年份 | A01、F05、F06，可改1—30国和任意时期 |
+| 方向时期 | 2000—2019（若可用） | F07、T03、T04，仅为默认 |
+| 排名时期/设置 | 2016—2021、ASK Top10 | T01，仅为默认 |
+| F06最低有效同比年份 | 3 | 低于要求时不生成F06 |
+| `DPI` | 350 | PNG下载分辨率 |
 
-A01保留原报告PNG版式，包括横轴历史遗留的%刻度；实际增长差单位为百分点（pp），轴标题和条形末端已经注明。没有为匹配旧数字更改数据。
+## 11. 更新Excel后的正常变化
 
-## 7. 疫情样本
+会按上传内容与当前参数自动变化：同比、PLF、排名、有效年份、规模分组名单、动态分类与阈值、方向R/ln(R)、TopN、图表数据和KPI。相对固定的是公式、Large/Small各40国的组容量、F06分类顺序和初始化默认值。
 
-A02：2016—2019至少有2个有效PLF值，且2020、2021均有效，全部须满足0<PLF≤100%。疫情前取每国有效PLF**中位数**，再跨国汇总。三个时期是同一批国家，不要求疫情前4年全部完整。
+新增年份应新增国家—年份行；已有国家—年份应更新原记录，不可追加重复行。不要为了匹配旧报告数字硬编码或改写数据。
 
-A03：疫情前2016—2019、2020、2021分别使用共同同比样本。疫情前点是国家—年份；后两期点是一国一年，不要求相同国家。
+## 12. 运行与部署
 
-## 8. 逐表说明
+维护者本地执行：
 
-| 编号 | Sheet / 字段来源 | 筛选、计算与排序 | XLSX工作表与路径 |
-|---|---|---|---|
-| T01 | Data!Country Name、Country Code、Time、ASKs、RPKs | 2016—2021、两项均>0、至少5个共同水平年份；相同年份均值与加权PLF；排名min法，ISO破同分 | ASK_Top10 / RPK_Top10；tables/T01_主要航空市场ASK_RPK排名.xlsx |
-| T02 | Data!Country Name、Country Code、Time、ASKs、RPKs | 全部共同同比样本严格四象限数量/比例，附同反方向小计及零增长校验 | 方向统计 / 校验；tables/T02_ASK_RPK年度变化方向统计.xlsx |
-| T03 | country_year_ask_capacity!country_code、country_name、year、ASK_out、ASK_in | 同F07区间、同均值和R/ln_R；按ln_R两端排序 | ln_R最低N国 / ln_R最高N国；tables/T03_ASK_out_in不对称国家.xlsx |
-| T04 | 同T03全部5列 | 当前区间mean_ASK_out或mean_ASK_in降序，另一个均值为次排序列 | ASK_out_top10 / ASK_in_top10；tables/T04_ASK_out_in_Top10.xlsx |
+```bash
+python -m pip install -r requirements-dev.txt
+python -m pytest -q
+python -m streamlit run app.py
+```
 
-T01的mean_ASK使用排名固定期共同年份，与市场规模分组使用全样本期ASK的mean_ASK不同。T02标题沿用原版，表内为所有年份合并统计。
-
-## 9. 国家动态页交互
-
-国家选择器覆盖Data中的全部国家，支持按国家名或ISO检索，最少1国、最多30国。布局随国家数自动变化：1—4国最多2×2，5—6国2×3，7—12国3×4，13—20国4×5，21—30国5×6。F05对每个国家在所选区间重设共同正值基期；若某国无有效基期，网页黄色提示。F06和A01只用所选区间，但增长率仍先在完整序列计算，避免把区间首年错误设为缺失。
-
-## 10. 关键中间数据
-
-`processed_data/` 内保留原有8份CSV：
-
-- country_year_ask_rpk_metrics.csv：原始列、滞后值、同比、共同样本、方向标识、PLF、平均ASK、规模组。
-- representative_country_indices.csv：当前代表国家、共同基期、ASK/RPK指数。
-- country_dynamic_metrics.csv：国家动态统计、年数与类型。
-- dynamic_type_thresholds.csv：本次7个分位数阈值。
-- country_ask_direction_metrics.csv：国家区间均值、R、ln_R、有效年数。
-- ask_direction_extreme_countries.csv：方向两端国家名单。
-- pandemic_plf_balanced_sample.csv：三时期同批国别PLF与规模组。
-- t01_market_ranking_eligible_countries.csv：T01全部合格国家及求和、均值、排名。
-
-## 11. 参数与影响
-
-| 参数 | 默认 | 影响 |
-|---|---|---|
-| N_LARGE / N_SMALL | 40 / 40 | F01、F03、F04、A02组别；网页固定 |
-| ASK_DIRECTION_START / END | 2000 / 2019 | F07、T03、T04；网页固定 |
-| TOP_DIRECTION_N | 9 | F07、T03每侧数量 |
-| MIN_DYNAMIC_VALID_YEARS | 4 | F06、A01；网页固定 |
-| 自选国家 | 默认原报告12国，可选1—30国 | F05展示与F06高亮 |
-| 国家动态年份 | 完整有效范围，可在该页选择 | F05、F06、A01；先算同比后截取 |
-| 疫情期 | 2016—2019 / 2020 / 2021 | A02、A03，固定研究设定 |
-| T01排名期 / 最低年数 | 2016—2021 / 5 | T01，固定研究设定 |
-| DPI | 350 | 全部PNG质量 |
-
-未来更新会自动改变排名、规模名单、动态分类、增长率及极端国家。疫情定义、排名期和方向默认期不会自动随最新年份移动；这是研究设定。若新年份不在某张图的固定区间内，该图可能保持不变，属于正常结果。
-
-## 12. 复现与测试
-
-默认口径基准：4732行、182国；共同同比777条；Large40 / Medium78 / Small40；PLF平衡113国；方向233国。数字仅用于测试断言，不参与网页计算。
-
-自动化测试覆盖10张图、4组表、同名文件更新、会话隔离、缺失方向Sheet、30国布局、区间基期、动态阈值和静态HTML结果渲染约束。同一数据和默认配置下统计结果一致；不同服务器字体可能产生轻微文字位置差异，不能承诺PNG二进制完全相同。
+终端用户不需要安装Python，只需打开部署后的Streamlit网址并上传Excel。Community Cloud读取根目录`requirements.txt`和`packages.txt`；Linux服务器可使用Docker配置迁移。详见`DEPLOYMENT.md`。

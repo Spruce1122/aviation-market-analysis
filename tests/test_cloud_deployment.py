@@ -46,10 +46,16 @@ def test_same_filename_changed_content_recomputes_without_cross_session_reuse(wo
     assert first.metrics.ASKs.sum() != second.metrics.ASKs.sum()
     assert first_state['loaded'] is not second_state['loaded']
 
+    first_state['dynamic_countries'] = ['AAA']
+    first_state['ranking_start_year'] = 2020
+    first_state['f01_label_mode'] = '不标注'
     updated = sync_analysis(first_state, second_payload, 'World_Development_Indicators.xlsx', config_for(codes))
     assert updated.loaded.digest == second.loaded.digest
     assert first_state['load_count'] == 2
     assert first_state['compute_count'] == 2
+    assert 'dynamic_countries' not in first_state
+    assert 'ranking_start_year' not in first_state
+    assert 'f01_label_mode' not in first_state
     release_session_data(first_state)
     assert 'loaded' not in first_state and 'bundle' not in first_state and 'results_zip' not in first_state
 

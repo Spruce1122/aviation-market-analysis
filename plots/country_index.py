@@ -20,7 +20,7 @@ def _layout(n):
     return 5, 6
 
 
-def plot_f05(index_data, config=DEFAULT_CONFIG, logger=LOGGER):
+def plot_f05(index_data, config=DEFAULT_CONFIG, logger=LOGGER, bottom_title="图5 自选国家ASK/RPK指数走势"):
     countries = config.representative_countries
     rows, cols = _layout(len(countries))
     fig, axes = plt.subplots(rows, cols, figsize=(max(7.2, cols * 3.25), max(4.8, rows * 2.7)), sharex=True, squeeze=False)
@@ -49,8 +49,9 @@ def plot_f05(index_data, config=DEFAULT_CONFIG, logger=LOGGER):
         Line2D([0], [0], color=COLORS["ASK"], marker="o", lw=2, label="ASK"),
         Line2D([0], [0], color=COLORS["RPK"], marker="s", lw=2, label="RPK"),
     ]
-    fig.legend(handles=handles, loc="upper center", bbox_to_anchor=(0.5, 0.985), ncol=2, frameon=False)
-    fig.subplots_adjust(left=0.07, right=0.99, top=0.93, bottom=0.085, wspace=0.24, hspace=0.40)
-    add_bottom_title(fig, "图5 自选国家ASK/RPK指数走势", 0.012)
+    fig.legend(handles=handles, loc="upper center", bbox_to_anchor=(0.5, 0.992), ncol=2, frameon=False)
+    # Reserve a distinct title band below the shared legend.  This avoids
+    # collisions for long country names in the first subplot row.
+    fig.subplots_adjust(left=0.07, right=0.99, top=0.885, bottom=0.145, wspace=0.24, hspace=0.46)
+    add_bottom_title(fig, bottom_title, 0.012)
     return fig
-

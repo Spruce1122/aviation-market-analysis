@@ -31,7 +31,8 @@ def xlsx_bytes(sheets):
 def figure_bytes(fig,fmt='png'):
     output=BytesIO()
     with PLOT_LOCK:
-        fig.savefig(output,format=fmt,dpi=DPI,bbox_inches='tight',facecolor='white')
+        bbox=None if getattr(fig,'_aviation_native_bbox',False) else 'tight'
+        fig.savefig(output,format=fmt,dpi=DPI,bbox_inches=bbox,facecolor='white')
     return output.getvalue()
 
 def results_zip(bundle, progress=None):

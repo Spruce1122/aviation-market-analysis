@@ -47,18 +47,21 @@ def plot_f06(country_dynamic, config=DEFAULT_CONFIG, logger=LOGGER, highlight_co
     if not selected.empty:
         ax.scatter(selected["corr_ask_rpk"], selected["gap_pp"], s=selected["point_size"]+75,
                    facecolors="none", edgecolors="#111111", linewidths=1.5, zorder=5)
-    texts = []
-    for _, row in label_data.iterrows():
-        right_side = row["corr_ask_rpk"] > 0.75
-        texts.append(
-            ax.text(
-                row["corr_ask_rpk"] - (0.012 if right_side else 0),
-                row["gap_pp"], row["Country Code"],
-                fontsize=9.0, ha="right" if right_side else "center", va="bottom", clip_on=True,
-            )
-        )
-    adjust_text_labels(texts, ax, logger)
+    texts=[];offsets=[]
+    for i,(_,row) in enumerate(label_data.sort_values(["corr_ask_rpk","gap_pp"]).iterrows()):
+        if row["corr_ask_rpk"]>.70:
+            offset=(-28-(i%2)*12,(i%5-2)*14)
+        else:
+            angle=2*math.pi*(i%8)/8;offset=(24*math.cos(angle),24*math.sin(angle))
+        offsets.append(offset)
+        texts.append(ax.annotate(
+            row["Country Code"],xy=(row["corr_ask_rpk"],row["gap_pp"]),xytext=offset,
+            textcoords="offset points",fontsize=8.5,ha="center",va="center",annotation_clip=True,
+            bbox={"boxstyle":"round,pad=.12","facecolor":"white","edgecolor":"none","alpha":.78},
+            arrowprops={"arrowstyle":"-","color":"#7D858C","lw":.5,"shrinkA":3,"shrinkB":3},
+        ))
+    adjust_text_labels(texts,ax,logger,draw_arrows=False)
+    for text,offset in zip(texts,offsets):text.set_position(offset)
     fig.subplots_adjust(left=0.11, right=0.98, top=0.84, bottom=0.15)
     add_bottom_title(fig, "图6 国家动态关系类型散点图", 0.018)
     return fig
-

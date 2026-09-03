@@ -168,22 +168,32 @@ def robust_common_limits(values: Iterable[np.ndarray]) -> tuple[float, float]:
     return low - margin, high + margin
 
 
-def adjust_text_labels(texts: list, ax, logger: logging.Logger | None = None) -> None:
+def adjust_text_labels(
+    texts: list,
+    ax,
+    logger: logging.Logger | None = None,
+    draw_arrows: bool = True,
+) -> None:
     """Use adjustText when installed; otherwise apply deterministic vertical repulsion."""
     if not texts:
         return
     try:
         from adjustText import adjust_text
 
-        adjust_text(
-            texts,
-            ax=ax,
-            arrowprops={"arrowstyle": "-", "color": "#7D858C", "lw": 0.6},
-            expand=(1.08, 1.18),
-            force_text=(0.25, 0.45),
-            force_points=(0.15, 0.25),
-            iter_lim=150,
-        )
+        kwargs = {
+            "texts": texts,
+            "ax": ax,
+            "expand": (1.08, 1.18),
+            "force_text": (0.25, 0.45),
+            "force_points": (0.15, 0.25),
+            "iter_lim": 150,
+            # Keep labels inside the axes so a tight PNG export cannot grow
+            # into an unexpectedly tall canvas.
+            "ensure_inside_axes": True,
+        }
+        if draw_arrows:
+            kwargs["arrowprops"] = {"arrowstyle": "-", "color": "#7D858C", "lw": 0.6}
+        adjust_text(**kwargs)
         return
     except ImportError:
         if logger:

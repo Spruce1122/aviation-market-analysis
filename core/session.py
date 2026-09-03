@@ -10,6 +10,12 @@ SESSION_DATA_KEYS = (
     'source_key', 'source_label', 'font_status',
 )
 
+CONTROL_PREFIXES = (
+    'ask_rpk_', 'dynamic_', 'direction_', 'period_', 'ranking_',
+    't02_', 't03_', 't04_', 'f01_', 'a01_', 'a03_',
+)
+CONTROL_KEYS = {'annual_country', 'annual_year', 'table_id'}
+
 def _clear_figures(state):
     figures = state.get('figure_cache') or {}
     for figure in figures.values():
@@ -18,11 +24,19 @@ def _clear_figures(state):
         except Exception:
             pass
 
-def release_session_data(state):
+def _clear_analysis_controls(state):
+    for key in list(state):
+        if key in CONTROL_KEYS or key.startswith(CONTROL_PREFIXES):
+            state.pop(key, None)
+
+
+def release_session_data(state, clear_controls=True):
     """Release figures and uploaded-workbook derivatives owned by one session."""
     _clear_figures(state)
     for key in SESSION_DATA_KEYS:
         state.pop(key, None)
+    if clear_controls:
+        _clear_analysis_controls(state)
     gc.collect()
 
 def sync_analysis(state, payload, filename, config):
@@ -33,7 +47,7 @@ def sync_analysis(state, payload, filename, config):
     if state.get('analysis_key') == key and state.get('bundle') is not None:
         return state['bundle']
     if state.get('source_key') != source_key:
-        release_session_data(state)
+        release_session_data(state, clear_controls=True)
     else:
         _clear_figures(state)
         for derived_key in ('bundle','analysis_key','figure_cache','results_zip'):

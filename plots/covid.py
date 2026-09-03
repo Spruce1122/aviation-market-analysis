@@ -106,3 +106,31 @@ def _label_representative_points(ax, part: pd.DataFrame, logger: logging.Logger)
                     fontsize=8.8, ha="left" if dx >= 0 else "right",
                     va="bottom" if dy >= 0 else "top", clip_on=True, annotation_clip=True)
 
+
+def plot_a02_period(overall, by_group, single=False):
+    fig,axes=plt.subplots(1,2,figsize=(13.8,5.7),sharey=True)
+    ax=axes[0];x=overall.Time.to_numpy()
+    ax.fill_between(x,overall.q25.to_numpy(),overall.q75.to_numpy(),color=COLORS["Medium"],alpha=.22,label="25%—75%分位区间")
+    ax.plot(x,overall["median"],color=COLORS["ASK"],marker="o",lw=2,label="中位数")
+    ax.set_title("A 全样本PLF分布");ax.set_ylabel("PLF（%）");ax.set_xlabel("年份");ax.yaxis.set_major_formatter(percent_formatter(0));style_axis(ax,"y");ax.legend(frameon=False)
+    ax=axes[1]
+    for group in ["Large","Medium","Small"]:
+        p=by_group.loc[by_group.market_size_group.eq(group)]
+        ax.plot(p.Time,p["median"],color=COLORS[group],marker="o",lw=2,label=MARKET_LABELS[group])
+    ax.set_title("B 不同市场规模PLF中位数");ax.set_xlabel("年份");ax.yaxis.set_major_formatter(percent_formatter(0));style_axis(ax,"y");ax.legend(frameon=False)
+    for ax in axes:ax.xaxis.set_major_locator(MaxNLocator(integer=True,nbins=8))
+    fig.subplots_adjust(left=.075,right=.985,top=.82,bottom=.2,wspace=.14);add_bottom_title(fig,"附图2 所选时期PLF变化",.016);return fig
+
+
+def plot_a03_period(metrics, years, logger=LOGGER):
+    common=metrics.loc[metrics.common_growth_sample & metrics.Time.isin(years)].copy();common["x"]=common.ASK_growth*100;common["y"]=common.RPK_growth*100
+    selected=[common.loc[common.Time.eq(year)] for year in years];low,high=robust_common_limits([pd.concat([p.x,p.y]) for p in selected])
+    cols=min(3,len(years));rows=math.ceil(len(years)/cols);fig,axes=plt.subplots(rows,cols,figsize=(cols*4.7,rows*4.6),sharex=True,sharey=True,squeeze=False)
+    for ax,p,year in zip(axes.ravel(),selected,years):
+        for group in ["Large","Medium","Small"]:
+            g=p.loc[p.market_size_group.eq(group)];ax.scatter(g.x,g.y,s=32,alpha=.65,color=COLORS[group],edgecolors="white",linewidths=.35)
+        ax.plot([low,high],[low,high],color=COLORS["reference"],ls="--",lw=1);ax.set(xlim=(low,high),ylim=(low,high),title=str(year),xlabel="ASK增长率（%）")
+        ax.set_aspect("equal",adjustable="box");ax.xaxis.set_major_formatter(percent_formatter(0));ax.yaxis.set_major_formatter(percent_formatter(0));style_axis(ax,"both")
+    for ax in axes.ravel()[len(years):]:ax.set_visible(False)
+    for ax in axes[:,0]:ax.set_ylabel("RPK增长率（%）")
+    fig.subplots_adjust(left=.07,right=.99,top=.93,bottom=.10,wspace=.16,hspace=.35);add_bottom_title(fig,"附图3 所选时期ASK与RPK增长关系",.01);return fig

@@ -30,7 +30,7 @@ def empty_panel():
     a,b,c=st.columns(3)
     a.markdown('#### 10张研究图\n统一口径、配色与正式图题')
     b.markdown('#### 4组统计表\n完整排名、筛选与Excel下载')
-    c.markdown('#### 国家动态\n自选1—30国及年份区间')
+    c.markdown('#### 自主分析\n每个模块独立选择国家与时期')
     with st.expander('查看Excel格式要求',expanded=True):
         st.markdown('**Data**：`Country Name` · `Country Code` · `Time` · `ASKs` · `RPKs`\n\n'
                     '**country_year_ask_capacity**：`country_code` · `country_name` · `year` · `ASK_out` · `ASK_in`\n\n'
