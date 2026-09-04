@@ -5,6 +5,9 @@ from __future__ import annotations
 import glob
 import logging
 import os
+import warnings
+from functools import lru_cache
+from io import BytesIO
 from pathlib import Path
 from typing import Iterable
 
@@ -63,52 +66,123 @@ def _register_font_file(path: Path) -> str | None:
         return None
 
 
-def setup_plotting_style(logger: logging.Logger) -> dict[str, str | bool]:
-    """Detect preferred fonts, register a CJK fallback, and set rcParams."""
-    windows_files = {
-        "times_regular": Path("C:/Windows/Fonts/times.ttf"),
-        "times_bold": Path("C:/Windows/Fonts/timesbd.ttf"),
-        "simsun": Path("C:/Windows/Fonts/simsun.ttc"),
-    }
-    for path in windows_files.values():
+FONT_TEST_TEXT = "年份 年度增长率中位数 大型市场 ASK与RPK 中国"
+CJK_SEARCH_PATTERNS = (
+    "C:/Windows/Fonts/simsun.ttc",
+    "C:/Windows/Fonts/simsun.ttf",
+    "/usr/share/fonts/opentype/noto/NotoSerifCJK*.ttc",
+    "/usr/share/fonts/opentype/noto/NotoSerifCJK*.otf",
+    "/usr/share/fonts/truetype/noto/NotoSerifCJK*.ttf",
+    "/usr/share/fonts/**/NotoSerifCJK*.ttc",
+    "/usr/share/fonts/**/NotoSerifCJK*.otf",
+    "/usr/share/fonts/**/NotoSerifCJK*.ttf",
+    "/usr/share/fonts/**/NotoSerifSC*.ttc",
+    "/usr/share/fonts/**/NotoSerifSC*.otf",
+    "/usr/share/fonts/**/NotoSerifSC*.ttf",
+    "/usr/share/fonts/opentype/noto/NotoSansCJK*.ttc",
+    "/usr/share/fonts/opentype/noto/NotoSansCJK*.otf",
+    "/usr/share/fonts/truetype/noto/NotoSansCJK*.ttf",
+    "/usr/share/fonts/**/NotoSansCJK*.ttc",
+    "/usr/share/fonts/**/NotoSansCJK*.otf",
+    "/usr/share/fonts/**/NotoSansCJK*.ttf",
+    "/usr/share/fonts/**/NotoSansSC*.ttc",
+    "/usr/share/fonts/**/NotoSansSC*.otf",
+    "/usr/share/fonts/**/NotoSansSC*.ttf",
+    # Development/verification fallback; production uses packages.txt paths above.
+    "/workspace/scratch/*/qa_fonts/noto-serif-sc-*.ttf",
+    "/workspace/scratch/*/qa_fonts/noto-sans-sc-*.ttf",
+)
+
+
+def _font_supports_text(path: Path, text: str = FONT_TEST_TEXT) -> bool:
+    """Verify that the face Matplotlib will load contains every requested glyph."""
+    try:
+        charmap = font_manager.get_font(str(path)).get_charmap()
+        return all(ord(char) in charmap for char in set(text) if not char.isspace())
+    except Exception:
+        return False
+
+
+def _expand_patterns(patterns) -> list[Path]:
+    found: list[Path] = []
+    seen: set[str] = set()
+    for pattern in patterns:
+        for item in sorted(glob.glob(pattern, recursive=True)):
+            suffix = Path(item).suffix.lower()
+            if suffix not in {".ttf", ".otf", ".ttc"} or item in seen:
+                continue
+            found.append(Path(item))
+            seen.add(item)
+    return found
+
+
+@lru_cache(maxsize=1)
+def _discover_fonts() -> dict:
+    searched = list(CJK_SEARCH_PATTERNS)
+    explicit = os.environ.get("AVIATION_CJK_FONT")
+    candidates = ([Path(explicit)] if explicit else []) + _expand_patterns(CJK_SEARCH_PATTERNS)
+    cjk_path = None
+    cjk_family = None
+    for candidate in candidates:
+        if not candidate.is_file() or not _font_supports_text(candidate):
+            continue
+        family = _register_font_file(candidate)
+        if family:
+            cjk_path, cjk_family = str(candidate), family
+            break
+
+    windows_times = [Path("C:/Windows/Fonts/times.ttf"), Path("C:/Windows/Fonts/timesbd.ttf")]
+    for path in windows_times:
         _register_font_file(path)
-
     times_ok = _font_family_exists("Times New Roman")
-    simsun_ok = _font_family_exists("SimSun")
-    if not times_ok:
-        logger.warning("未检测到Times New Roman；本次运行使用可用的衬线字体回退。")
-    if not simsun_ok:
-        logger.warning("未检测到SimSun（宋体）；本次运行尝试注册可用的中文衬线字体回退。")
 
-    cjk_family = "SimSun" if simsun_ok else None
-    if cjk_family is None:
-        explicit = os.environ.get("AVIATION_CJK_FONT")
-        candidates: list[Path] = []
-        if explicit:
-            candidates.append(Path(explicit))
-        for pattern in [
-            "/usr/share/fonts/**/NotoSerifCJK*.otf",
-            "/usr/share/fonts/**/NotoSerifSC*.otf",
-            "/workspace/scratch/*/qa_fonts/noto-serif-sc-chinese-simplified-400-normal.ttf",
-        ]:
-            candidates.extend(Path(item) for item in glob.glob(pattern, recursive=True))
-        for candidate in candidates:
-            registered = _register_font_file(candidate)
-            if registered:
-                cjk_family = registered
-                logger.warning("中文使用回退字体: %s", registered)
-                break
+    liberation_candidates = _expand_patterns((
+        "/usr/share/fonts/**/LiberationSerif-Regular.ttf",
+        "/usr/share/fonts/**/LiberationSerif-Regular.otf",
+        "/usr/share/fonts/**/LiberationSerif*.ttc",
+    ))
+    liberation_family = None
+    for candidate in liberation_candidates:
+        liberation_family = _register_font_file(candidate)
+        if liberation_family:
+            break
+    if not liberation_family and _font_family_exists("Liberation Serif"):
+        liberation_family = "Liberation Serif"
 
-    latin_family = "Times New Roman" if times_ok else (
-        "Nimbus Roman" if _font_family_exists("Nimbus Roman") else "DejaVu Serif"
+    latin_family = (
+        "Times New Roman" if times_ok else
+        liberation_family or
+        ("Nimbus Roman" if _font_family_exists("Nimbus Roman") else "DejaVu Serif")
     )
-    if cjk_family is None:
-        cjk_family = "DejaVu Sans"
-        logger.warning("未找到覆盖中文的回退字体，中文可能显示异常。")
+    return {
+        "times_new_roman": times_ok,
+        "simsun": bool(cjk_family and "SimSun" in cjk_family),
+        "latin_family": latin_family,
+        "cjk_family": cjk_family,
+        "cjk_path": cjk_path,
+        "cjk_available": cjk_family is not None,
+        "searched_paths": searched,
+    }
 
+
+def setup_plotting_style(logger: logging.Logger, require_cjk: bool = False) -> dict:
+    """Register real font files once and apply one style to preview, PNG and PDF."""
+    status = dict(_discover_fonts())
+    if not status["times_new_roman"]:
+        logger.info("Times New Roman不可用；英文字体使用 %s。", status["latin_family"])
+    if status["cjk_available"]:
+        logger.info("图表中文字体：%s（%s）", status["cjk_family"], status["cjk_path"])
+    else:
+        logger.error("未找到支持中文的Matplotlib字体。已搜索：%s", " | ".join(status["searched_paths"]))
+        if require_cjk:
+            raise RuntimeError("服务器未找到支持中文的字体；请确认packages.txt已安装fonts-noto-cjk。")
+
+    families = [status["latin_family"]]
+    if status["cjk_family"]:
+        families.append(status["cjk_family"])
     plt.rcParams.update(
         {
-            "font.family": [latin_family, cjk_family],
+            "font.family": families,
             "font.size": BASE_FONT_SIZE,
             "axes.titlesize": PANEL_TITLE_SIZE,
             "axes.labelsize": BASE_FONT_SIZE + 0.5,
@@ -123,12 +197,38 @@ def setup_plotting_style(logger: logging.Logger) -> dict[str, str | bool]:
             "savefig.facecolor": "white",
         }
     )
-    return {
-        "times_new_roman": times_ok,
-        "simsun": simsun_ok,
-        "latin_family": latin_family,
-        "cjk_family": cjk_family,
-    }
+    return status
+
+
+def validate_matplotlib_fonts(logger: logging.Logger, status: dict | None = None) -> dict:
+    """Render representative Chinese labels to an in-memory PNG and capture glyph errors."""
+    current = dict(status or setup_plotting_style(logger))
+    if not current.get("cjk_available"):
+        current.update(font_validation_ok=False, font_validation_message=(
+            "未找到中文字体。已搜索：" + " | ".join(current.get("searched_paths", []))))
+        return current
+    output = BytesIO()
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter("always")
+        fig, ax = plt.subplots(figsize=(6.4, 2.0))
+        ax.plot([0, 1], [0, 1], label="大型市场")
+        ax.set_xlabel("年份")
+        ax.set_ylabel("年度增长率中位数")
+        ax.set_title("ASK与RPK")
+        ax.text(0.5, 0.45, "中国", ha="center")
+        ax.legend(frameon=False)
+        fig.savefig(output, format="png", dpi=120, bbox_inches="tight", facecolor="white")
+        plt.close(fig)
+    missing = [str(item.message) for item in caught if "Glyph" in str(item.message) and "missing" in str(item.message)]
+    ok = output.tell() > 0 and not missing
+    message = "字体自检通过" if ok else "字体自检发现缺字：" + "；".join(missing)
+    if ok:
+        logger.info("%s：中文=%s；英文=%s", message, current["cjk_family"], current["latin_family"])
+    else:
+        logger.error(message)
+    current.update(font_validation_ok=ok, font_validation_message=message,
+                   font_test_png=output.getvalue() if ok else b"")
+    return current
 
 
 def style_axis(ax, grid_axis: str | None = "y") -> None:

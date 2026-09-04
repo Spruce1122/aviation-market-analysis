@@ -30,7 +30,10 @@ def render_chart(bundle, code):
         random_state = np.random.get_state()
         np.random.seed(0)
         try:
-            setup_plotting_style(LOGGER)
+            try:
+                setup_plotting_style(LOGGER, require_cjk=True)
+            except RuntimeError as exc:
+                raise ChartUnavailable(str(exc)) from exc
             m,c = bundle.metrics,bundle.config
             if code=='F01': fig=plot_f01(m,c)
             elif code=='F02': fig=plot_f02(trend_metrics(bundle),c)

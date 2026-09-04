@@ -11,12 +11,22 @@ from components.theme import apply_theme,header
 from components.upload_panel import upload_panel,empty_panel
 from components.sidebar import navigation,parameters
 from components.pages import overview,full_sample_page,country_analysis_page,direction_analysis_page,methods_page
-from plots.style import setup_plotting_style
+from plots.style import setup_plotting_style,validate_matplotlib_fonts
 from plots.registry import PLOT_LOCK
 
 st.set_page_config(page_title='航空市场供需分析',page_icon='✈',layout='wide',initial_sidebar_state='expanded')
+
+@st.cache_resource
+def initialize_matplotlib_fonts():
+    logger=logging.getLogger('aviation_dashboard')
+    with PLOT_LOCK:
+        return validate_matplotlib_fonts(logger,setup_plotting_style(logger))
+
+font_status=initialize_matplotlib_fonts()
 apply_theme()
 header()
+if not font_status.get('font_validation_ok',False):
+    st.warning('图表中文字体自检未通过：'+font_status.get('font_validation_message','未知字体错误'))
 payload,filename,source_label=upload_panel()
 module=navigation()
 config=parameters()
@@ -33,10 +43,7 @@ else:
     try:
         with st.spinner('校验Excel并准备分析数据…'):
             bundle=sync_analysis(st.session_state,payload,filename,config)
-        if 'font_status' not in st.session_state:
-            with PLOT_LOCK:
-                st.session_state.font_status=setup_plotting_style(logging.getLogger('aviation_dashboard'))
-        if module=='数据概览': overview(bundle,st.session_state.font_status)
+        if module=='数据概览': overview(bundle,font_status)
         elif module=='全样本分析': full_sample_page(bundle)
         elif module=='分国家ASK/RPK分析': country_analysis_page(bundle)
         elif module=='出发侧（ASK_out）与到达侧（ASK_in）分析': direction_analysis_page(bundle)

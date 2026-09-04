@@ -26,6 +26,15 @@ from utils.export import csv_bytes, xlsx_bytes
 LOGGER = logging.getLogger("aviation_dashboard")
 
 
+def _activate_plot_fonts():
+    try:
+        setup_plotting_style(LOGGER, require_cjk=True)
+        return True
+    except RuntimeError as exc:
+        st.warning(str(exc))
+        return False
+
+
 def _range_text(series):
     span = actual_range(series)
     return "无有效年份" if span is None else f"{span[0]}—{span[1]}"
@@ -114,8 +123,7 @@ def overview(bundle, font_status):
             d = bundle.loaded.direction
             st.write(f"ASK_out/in原始覆盖：{d.country_code.nunique()}国，{int(d.year.min())}—{int(d.year.max())}")
         st.caption("Data中的最早和最晚年份包含宏观数据覆盖；航空图表时间控件按ASK、RPK或方向指标的实际有效年份生成。")
-    if not (font_status["times_new_roman"] and font_status["simsun"]):
-        st.info(f"当前字体回退：英文 {font_status['latin_family']}；中文 {font_status['cjk_family']}。")
+    st.caption(f"图表中文字体：{font_status.get('cjk_family') or '未找到'}　｜　图表英文字体：{font_status.get('latin_family') or '未找到'}　｜　{font_status.get('font_validation_message', '尚未自检')}")
     st.divider()
     full_download(bundle)
 
@@ -224,8 +232,9 @@ def country_analysis_page(bundle):
         mode = st.radio("展示方式", ["绝对规模", "指数走势"], horizontal=True)
         filtered = m.loc[m.Time.between(*selected) & m["Country Code"].isin(countries)].copy()
         cfg = replace(bundle.config, representative_countries=tuple(countries))
+        if not _activate_plot_fonts():
+            return
         with PLOT_LOCK:
-            setup_plotting_style(LOGGER)
             if mode == "绝对规模":
                 fig = plot_a01_absolute(filtered, countries)
                 data = filtered[["Country Name", "Country Code", "Time", "ASKs", "RPKs"]]
@@ -245,8 +254,9 @@ def country_analysis_page(bundle):
     except ValueError as exc:
         st.warning(str(exc))
         return
+    if not _activate_plot_fonts():
+        return
     with PLOT_LOCK:
-        setup_plotting_style(LOGGER)
         fig = plot_f06(dynamic, bundle.config, countries)
     data = dynamic.copy()
     data["重点显示"] = data["Country Code"].isin(countries)
@@ -302,8 +312,9 @@ def direction_analysis_page(bundle):
     else:
         data = pd.concat([low, high], ignore_index=True).drop_duplicates("country_code")
         lower, upper = low, high
+    if not _activate_plot_fonts():
+        return
     with PLOT_LOCK:
-        setup_plotting_style(LOGGER)
         fig = plot_f07(lower, upper, cfg)
     temp = copy(bundle); temp.config = cfg; temp.direction = direction; temp.direction_low = lower; temp.direction_high = upper
     _show_figure(temp, code, fig=fig, data=data, key_suffix="_period")

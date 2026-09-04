@@ -34,6 +34,16 @@ GitHub仓库根目录应直接包含 `app.py`、`requirements.txt`、`packages.t
 
 终端用户只访问部署网址。上传文件及派生结果保存在当前Streamlit会话内存中；程序不把上传Excel写入项目公共目录，也不跨用户复用结果。会话刷新或失效后，内存数据随之释放。
 
+## 图表字体与云端自检
+
+- `plots/style.py`是网页预览、PNG和PDF的统一字体入口，不在单张图中单独指定字体。
+- Windows优先使用宋体/SimSun显示中文、Times New Roman显示英文和数字。
+- Linux优先注册Noto Serif CJK字体；没有Serif时再使用Noto Sans CJK。英文字体优先Liberation Serif。
+- 字体扫描同时识别`.ttf`、`.otf`和`.ttc`，并使用字体文件报告的真实family名称。
+- 应用启动时会在内存中绘制包含中文坐标、标题、图例和国家名的测试PNG。数据概览会显示实际中文字体、英文字体和自检结果。
+- 如果服务器没有任何支持中文的字体，网页会显示黄色警告并停止生成图表，服务器日志同时记录全部搜索路径，不会用缺字字体继续绘图。
+- `packages.txt`必须保留`fonts-noto-cjk`和`fonts-liberation`。部署日志应能看到这两个Linux系统包安装成功。
+
 ## Linux云服务器迁移
 
 ```bash
