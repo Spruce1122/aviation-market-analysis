@@ -49,7 +49,7 @@ def load_data(payload: bytes, filename: str) -> LoadedWorkbook:
             (DATA_SHEET, DATA_COLUMNS, 'Country Code', 'Country Name', 'Time', ['ASKs','RPKs']),
             (DIRECTION_SHEET, DIRECTION_COLUMNS, 'country_code','country_name','year',['ASK_out','ASK_in'])]:
             if sheet not in book.sheet_names:
-                msg = f'缺少Sheet：{sheet}。当前无法运行ASK方向结构分析（F07、T03、T04）；ASK/RPK分析仍可使用。'
+                msg = f'缺少Sheet：{sheet}。当前无法运行出发侧（ASK_out）与到达侧（ASK_in）分析（F07、T03、T04）；ASK/RPK分析仍可使用。'
                 notes.append(msg)
                 lines.append('WARNING ' + msg)
                 frames[sheet] = None

@@ -1,50 +1,43 @@
-"""Independent year selectors shared by all analytical modules."""
-from __future__ import annotations
-
-import pandas as pd
+"""Reusable selectors constrained by each indicator's actual coverage."""
 import streamlit as st
 
 
-def _available_years(data: pd.DataFrame, column: str) -> list[int]:
-    return sorted(pd.to_numeric(data[column], errors="coerce").dropna().astype(int).unique().tolist())
+def actual_range(series):
+    values = series.dropna()
+    if values.empty:
+        return None
+    return int(values.min()), int(values.max())
 
 
-def select_year_range(
-    data: pd.DataFrame,
-    key_prefix: str,
-    default_start: int | None = None,
-    default_end: int | None = None,
-    column: str = "Time",
-    show_reset: bool = True,
-) -> tuple[int, int, str]:
-    years = _available_years(data, column)
-    if not years:
-        raise ValueError("没有可选择的有效年份。")
-    lo, hi = years[0], years[-1]
-    start_default = min(max(default_start if default_start is not None else lo, lo), hi)
-    end_default = min(max(default_end if default_end is not None else hi, lo), hi)
-    if start_default > end_default:
-        start_default, end_default = lo, hi
-    start_key, end_key = f"{key_prefix}_start_year", f"{key_prefix}_end_year"
-    if show_reset and st.button("恢复默认设置", key=f"{key_prefix}_reset_years"):
-        st.session_state[start_key] = start_default
-        st.session_state[end_key] = end_default
-    left, right = st.columns(2)
-    start = left.selectbox("开始年份", years, index=years.index(start_default), key=start_key)
-    end = right.selectbox("结束年份", years, index=years.index(end_default), key=end_key)
-    if start > end:
-        st.warning("开始年份晚于结束年份，系统已按较早年份—较晚年份解释。")
-        start, end = end, start
-    return int(start), int(end), "single" if start == end else "multi"
+def year_range(label, years, key, default=None):
+    coverage = actual_range(years)
+    if coverage is None:
+        st.warning("当前指标没有有效年份。")
+        return None
+    lo, hi = coverage
+    if lo == hi:
+        st.caption(f"{label}：{lo}")
+        return lo, hi
+    value = default or (lo, hi)
+    value = (max(lo, int(value[0])), min(hi, int(value[1])))
+    if value[0] > value[1]:
+        value = (lo, hi)
+    return st.slider(label, lo, hi, value, key=key)
 
 
-def mode_text(mode: str) -> str:
-    return "单年" if mode == "single" else "多年平均"
-
-
-def period_text(start_year: int, end_year: int) -> str:
-    return str(start_year) if start_year == end_year else f"{start_year}—{end_year}"
-
-
-def period_slug(start_year: int, end_year: int) -> str:
-    return str(start_year) if start_year == end_year else f"{start_year}-{end_year}"
+def period_controls(metrics, config, key_prefix, years=None):
+    valid = metrics.loc[metrics["common_growth_sample"], "Time"] if years is None else years
+    coverage = actual_range(valid)
+    if coverage is None:
+        st.warning("当前数据没有ASK/RPK共同同比有效年份。")
+        return None
+    lo, hi = coverage
+    cols = st.columns(4)
+    pre_start = cols[0].number_input("第一时期起始年", lo, hi, max(lo, min(hi, config.period_pre_start)), key=key_prefix+"_pre_start")
+    pre_end = cols[1].number_input("第一时期结束年", lo, hi, max(lo, min(hi, config.period_pre_end)), key=key_prefix+"_pre_end")
+    year_2 = cols[2].number_input("第二时期年份", lo, hi, max(lo, min(hi, config.period_shock_year)), key=key_prefix+"_year2")
+    year_3 = cols[3].number_input("第三时期年份", lo, hi, max(lo, min(hi, config.period_recovery_year)), key=key_prefix+"_year3")
+    if pre_start > pre_end:
+        st.warning("第一时期起始年份应早于或等于结束年份。")
+        return None
+    return int(pre_start), int(pre_end), int(year_2), int(year_3)

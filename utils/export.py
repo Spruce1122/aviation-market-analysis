@@ -31,8 +31,7 @@ def xlsx_bytes(sheets):
 def figure_bytes(fig,fmt='png'):
     output=BytesIO()
     with PLOT_LOCK:
-        bbox=None if getattr(fig,'_aviation_native_bbox',False) else 'tight'
-        fig.savefig(output,format=fmt,dpi=DPI,bbox_inches=bbox,facecolor='white')
+        fig.savefig(output,format=fmt,dpi=DPI,bbox_inches='tight',facecolor='white')
     return output.getvalue()
 
 def results_zip(bundle, progress=None):
@@ -62,10 +61,10 @@ def results_zip(bundle, progress=None):
                   'created_utc':datetime.now(timezone.utc).isoformat(), 'config':bundle.config.to_dict(),
                   'missing_or_unavailable':skipped,'data_rows':len(bundle.metrics),
                   'common_growth_n':int(bundle.metrics.common_growth_sample.sum()),
-                  'note':'缺失年份不插值。F02/F03使用当前显示区间；其他图遵从各自样本期。'}
+                  'note':'缺失年份不插值。图表遵从各自有效样本和当前已应用参数。'}
         archive.writestr('analysis_manifest.json',json.dumps(manifest,ensure_ascii=False,indent=2))
         archive.writestr('README.txt','图与对应数据共用本次计算结果。未满足样本条件的图见analysis_manifest.json。\n'
-                          '图A01沿用原版横轴%刻度，实际增长差单位为百分点（pp）。\n'
+                          'A01为自选国家指数模式；F05作为历史复现输出保留，网页不提供独立入口。\n'
                           '原始文件不包含在导出包中；来源文件名、SHA256、配置均已记录。\n')
     if progress: progress(1.0,'全部可用结果已准备完成')
     return output.getvalue()

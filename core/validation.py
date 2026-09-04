@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from datetime import datetime
+from pathlib import Path
 import re
 
 import numpy as np
@@ -107,4 +109,62 @@ def _clean_and_validate_sheet(
         _append_year_counts(lines, result, year_col, value_cols)
 
     return result
+
+
+def validate_and_clean(
+    data: pd.DataFrame,
+    direction: pd.DataFrame,
+    loader_metadata: dict[str, dict[str, int]],
+    report_path: Path,
+) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Validate, write a report, and return typed copies for analysis."""
+    lines = [
+        "航空市场复现项目：数据校验报告",
+        f"生成时间: {datetime.now().isoformat(timespec='seconds')}",
+        "规则: 缺失年份不插值；0值保留；各指标按自身规则判断0是否有效。",
+    ]
+    for sheet, meta in loader_metadata.items():
+        lines.append(
+            f"{sheet}: Excel读取行数 {meta['raw_rows']:,}; "
+            f"整行全空记录 {meta['blank_rows_removed']:,}; "
+            f"进入校验行数 {meta['rows_after_blank_removal']:,}"
+        )
+
+    fatal: list[str] = []
+    clean_data = _clean_and_validate_sheet(
+        data,
+        DATA_SHEET,
+        DATA_COLUMNS,
+        "Country Code",
+        "Country Name",
+        "Time",
+        ["ASKs", "RPKs"],
+        lines,
+        fatal,
+    )
+    clean_direction = _clean_and_validate_sheet(
+        direction,
+        DIRECTION_SHEET,
+        DIRECTION_COLUMNS,
+        "country_code",
+        "country_name",
+        "year",
+        ["ASK_out", "ASK_in"],
+        lines,
+        fatal,
+    )
+
+    lines.append("")
+    if fatal:
+        lines.append("校验结论: FAILED")
+        lines.extend(f"ERROR {message}" for message in fatal)
+    else:
+        lines.append("校验结论: PASSED")
+        lines.append("必需字段、主键、年份格式和非负性检查均通过。")
+
+    report_path.parent.mkdir(parents=True, exist_ok=True)
+    report_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    if fatal:
+        raise ValueError("数据校验失败，详见 output/logs/data_validation_report.txt")
+    return clean_data, clean_direction
 

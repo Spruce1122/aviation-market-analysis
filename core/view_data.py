@@ -43,17 +43,15 @@ def chart_data(bundle, chart):
     if chart == 'F07':
         return pd.concat([bundle.direction_low,bundle.direction_high],ignore_index=True).drop_duplicates('country_code').sort_values(['ln_R','country_code'])
     if chart == 'A01':
-        p = bundle.dynamic.loc[bundle.dynamic.n_valid.ge(MIN_VALID_GROWTH_YEARS)].copy()
-        low = p.sort_values(['median_growth_gap','Country Code']).head(N_GROWTH_GAP_EXTREMES).assign(side='ASK增长相对领先')
-        high = p.sort_values(['median_growth_gap','Country Code'],ascending=[False,True]).head(N_GROWTH_GAP_EXTREMES).assign(side='RPK增长相对领先')
-        p = pd.concat([low,high],ignore_index=True).drop_duplicates('Country Code').sort_values(['median_growth_gap','Country Code'])
-        p['gap_pp'] = p.median_growth_gap*100
-        return p
+        return bundle.indices
     if chart == 'A02':
         return bundle.balanced
     if chart == 'A03':
-        p = common.loc[common.Time.between(PANDEMIC_PRE_START,PANDEMIC_RECOVERY_YEAR)].copy()
-        p['period'] = np.where(p.Time.le(PANDEMIC_PRE_END),'2016—2019',p.Time.astype(str))
+        c = bundle.config
+        wanted = common.Time.between(c.period_pre_start,c.period_pre_end) | common.Time.isin([c.period_shock_year,c.period_recovery_year])
+        p = common.loc[wanted].copy()
+        p['period'] = np.where(p.Time.between(c.period_pre_start,c.period_pre_end),
+                               f'{c.period_pre_start}—{c.period_pre_end}',p.Time.astype(str))
         p['x'],p['y'] = p.ASK_growth*100,p.RPK_growth*100
         return p
     raise KeyError(chart)

@@ -1,25 +1,63 @@
-"""Stable output identifiers, filenames and per-chart data lineage."""
+"""Central navigation, labels, data lineage and interpretation metadata."""
+
+MODULES = [
+    "数据概览",
+    "全样本分析",
+    "分国家ASK/RPK分析",
+    "出发侧（ASK_out）与到达侧（ASK_in）分析",
+    "数据与方法说明",
+]
+
+# Tuple layout is retained for compatibility with the export layer:
+# display name, file stem, module, derived fields, short method.
 CHARTS = {
- 'F01': ('年度增长同步与偏离', 'F01_ASK_RPK年度增长同步与偏离', 'ASK–RPK供需关系', 'ASK_growth、RPK_growth、market_size_group', '相邻年份连续，ASK与RPK在两年均大于0。每个点为国家—年份；横纵轴为增长率×100，颜色为市场规模，虚线为y=x。1%—99%分位显示范围不改变统计样本。'),
- 'F02': ('ASK/RPK年度增长率趋势', 'F02_ASK_RPK年度增长率中位数趋势', 'ASK–RPK供需关系', 'ASK_growth、RPK_growth', '分别使用ASK独立同比样本、RPK独立同比样本，按年份取跨国中位数。不是加总量增速，也不强制两条线样本相同。年份筛选发生在同比计算之后。'),
- 'F03': ('不同规模市场增长趋势', 'F03_不同规模市场ASK_RPK增长趋势', 'ASK–RPK供需关系', 'ASK_growth、RPK_growth、market_size_group', '按全样本期平均ASK固定市场分组；组内各年分别计算ASK和RPK独立同比中位数。显示区间不会重设市场分组。'),
- 'F04': ('市场规模同步性与偏离', 'F04_市场规模ASK_RPK同步性与偏离', 'ASK–RPK供需关系', 'ASK_growth、RPK_growth、abs_growth_gap、opposite_direction', '组内合并所有共同增长国家—年份，计算Pearson相关系数、平均绝对增长差×100（百分点）、严格反方向比例×100。N为观测数。零增长保留在分母但不属于严格增减类别。'),
- 'F05': ('自选国家ASK/RPK指数走势', 'F05_自选国家ASK_RPK指数走势', '国家动态分析', 'base_year、ASK_index、RPK_index', '在所选区间内，各国首次ASK与RPK同时为正的年份为共同基期；指数=当前值/各自基期值×100。各国基期可不同；缺失不插值，非正值不计算指数。'),
- 'F06': ('国家动态关系类型', 'F06_国家动态关系类型散点图', '国家动态分析', 'corr_ask_rpk、mean_abs_growth_gap、n_valid、dynamic_type', '共同同比样本至少达到最低有效年份。横轴为Pearson相关系数，纵轴为平均绝对增长差×100（百分点），点面积对应有效年份数。分类按样本四分位数及明确优先顺序自动计算。'),
- 'F07': ('ASK方向不对称', 'F07_ASK_out_in方向不对称', 'ASK方向结构', 'mean_ASK_out、mean_ASK_in、R、ln_R、n_years', '区间内仅用ASK_out和ASK_in同时非缺失的年份计算各自均值（保留0）；均值均为正时R=mean_out/mean_in，ln_R=ln(R)。选ln_R两端国家；重叠国家仅绘制一次。'),
- 'A01': ('自选国家ASK/RPK规模比较', 'A01_自选国家ASK_RPK规模比较', '国家动态分析', 'ASK、RPK、有效年份', '严格使用当前自选国家和时期；单年读取当年水平，多年按有效年度算术平均。展示单位为亿座公里/亿客公里。'),
- 'A02': ('所选时期PLF变化', 'A02_所选时期PLF变化', '时期扩展分析', 'PLF、market_size_group', '所选时期逐年使用0<PLF≤100%的跨国样本，计算中位数及25%—75%分位区间，并比较固定规模组。'),
- 'A03': ('所选时期ASK/RPK增长关系', 'A03_所选时期ASK_RPK增长关系', '时期扩展分析', 'ASK_growth、RPK_growth、market_size_group', '同比先按完整时间序列计算，再筛选展示年份；每年一个面板，最多6个面板，同一坐标尺度与y=x参考线。'),
+    "F02": ("ASK/RPK年度增长率趋势", "F02_ASK_RPK年度增长率中位数趋势", "全样本分析", "ASK_growth、RPK_growth", "相邻年份连续且前后两期均为正时计算同比；ASK与RPK分别按年份取跨国中位数。"),
+    "F01": ("ASK与RPK年度增长同步与偏离", "F01_ASK_RPK年度增长同步与偏离", "全样本分析", "ASK_growth、RPK_growth、market_size_group", "仅使用ASK和RPK同比同时有效的国家—年份观测；虚线为y=x。"),
+    "F03": ("不同规模市场ASK/RPK增长趋势", "F03_不同规模市场ASK_RPK增长趋势", "全样本分析", "ASK_growth、RPK_growth、market_size_group", "按全样本期平均ASK固定分组，并在各组内按年份分别计算ASK和RPK同比中位数。"),
+    "F04": ("不同规模市场ASK/RPK同步性与偏离", "F04_市场规模ASK_RPK同步性与偏离", "全样本分析", "corr、mean_abs_gap_pp、opposite_share_pct", "各组共同同比样本计算Pearson相关系数、平均绝对增长差和反方向变化比例。"),
+    "A02": ("PLF年度变化与市场规模比较", "A02_PLF年度变化与市场规模比较", "全样本分析", "PLF、pre_plf、shock_plf、recovery_plf、market_size_group", "三个时期使用同一批国家；第一时期每国取有效PLF中位数，两个比较年份均须有有效PLF。"),
+    "A03": ("ASK/RPK年度增长关系分时期观察", "A03_ASK_RPK年度增长关系分时期观察", "全样本分析", "ASK_growth、RPK_growth、growth_gap", "三个面板分别使用各时期共同同比样本并共用坐标范围和y=x参考线。"),
+    "A01": ("自选国家ASK/RPK规模与指数比较", "A01_自选国家ASK_RPK规模与指数比较", "分国家ASK/RPK分析", "ASKs、RPKs、base_year、ASK_index、RPK_index", "绝对规模比较原始ASK/RPK；指数模式以所选区间内各国首个ASK与RPK共同正值年份为100。"),
+    "F06": ("国家ASK/RPK动态关系类型", "F06_国家ASK_RPK动态关系类型", "分国家ASK/RPK分析", "corr_ask_rpk、mean_abs_growth_gap、n_valid、dynamic_type", "所选时期共同同比样本按国汇总；类型阈值由当前合格国家样本四分位数动态形成。"),
+    # Retained for historical reproducibility and reused by A01 index mode.
+    "F05": ("代表性国家ASK/RPK指数", "F05_代表性国家ASK_RPK指数走势", None, "base_year、ASK_index、RPK_index", "底层历史绘图函数；网页由A01指数模式复用。"),
+    "F07": ("ASK_out与ASK_in方向不对称", "F07_ASK_out_in方向不对称", "出发侧（ASK_out）与到达侧（ASK_in）分析", "mean_ASK_out、mean_ASK_in、R、ln_R、n_years", "所选时期ASK_out和ASK_in共同有效年份分别取均值；R=mean_out/mean_in，ln_R=ln(R)。"),
 }
+
 TABLES = {
- 'T01': ('主要航空市场ASK/RPK排名','T01_主要航空市场ASK_RPK排名', '2016—2021内ASK、RPK同时为正至少5年；共同年份均值排名，min法处理并列，ISO破同分。加权PLF=ΣRPK/ΣASK×100。'),
- 'T02': ('ASK/RPK年度变化方向','T02_ASK_RPK年度变化方向统计', '合并全部共同同比国家—年份，统计严格正负四象限及同/反方向小计。末两行是小计，不可与前四行相加；零增长计入分母但不进入严格增减类别。'),
- 'T03': ('ASK方向极端不对称国家','T03_ASK_out_in不对称国家', '使用当前方向分析区间，按ln_R最低/最高分别展示，与F07一致。'),
- 'T04': ('ASK_out / ASK_in Top10','T04_ASK_out_in_Top10', '按当前区间mean_ASK_out或mean_ASK_in排序，各取10国；衡量绝对规模，与ln_R不对称程度不同。'),
+    "T01": ("ASK/RPK国家排名与排名查询", "T01_ASK_RPK国家排名与排名查询", "所选时期ASK和RPK同时为正的共同年份汇总；加权PLF=ΣRPK/ΣASK×100%。"),
+    "T02": ("各国ASK/RPK年度变化方向统计", "T02_各国ASK_RPK年度变化方向统计", "所选时期共同同比国家—年份观测按严格正负号分类，并提供汇总与明细。"),
+    "T04": ("ASK_out / ASK_in国家规模排名", "T04_ASK_out_in国家规模排名", "单年使用当年值，多年使用所选时期均值；衡量绝对国际运力规模。"),
+    "T03": ("ASK_out / ASK_in极端不对称国家", "T03_ASK_out_in极端不对称国家", "与F07使用相同时间区间和R、ln(R)口径，按ln(R)两端筛选。"),
 }
-MODULES = ['数据概览','ASK–RPK供需关系','国家动态分析','ASK方向结构','时期扩展分析','统计表','数据与方法说明']
+
+MODULE_ITEMS = {
+    "全样本分析": ["F02", "F01", "F03", "F04", "A02", "A03"],
+    "分国家ASK/RPK分析": ["T01", "A01", "F06", "T02"],
+    "出发侧（ASK_out）与到达侧（ASK_in）分析": ["T04", "F07", "T03"],
+}
+
+HOW_TO_READ = {
+    "F02": ["两线长期接近：运力与实际客运量总体同步变化。", "下降阶段RPK低于ASK：需求收缩快于运力撤减。", "恢复阶段RPK高于ASK：需求恢复快于运力重新投放。", "两条线使用各自有效样本，年度国家数可能不同。"],
+    "F01": ["45°线上方：RPK增长快于ASK；线下方：ASK增长快于RPK。", "点越靠近45°线，两者变化幅度越同步。", "右上和左下分别表示同时增长、同时下降；右下和左上表示方向相反。", "增长偏离本身不能直接证明运力过剩。"],
+    "F03": ["比较三个规模组中ASK与RPK两线的距离、下降幅度和恢复速度。", "某组两线距离更大，表示该组供需增长幅度偏离更明显。", "组间差异描述调整表现，形成原因仍需结合市场背景。"],
+    "F04": ["相关系数越高，同步程度越高。", "平均绝对增长差越低，两者增长幅度越接近。", "反方向比例越低，一增一减的情况越少。", "高相关、小差距、低反向比例共同表示较强协调性。"],
+    "A02": ["PLF=RPK/ASK×100%，表示既有运力转化为实际客运量的比例。", "PLF提高表示相对利用程度改善；下降表示客运量相对投放运力减弱。", "PLF反映相对利用程度，绝对市场规模需结合ASK和RPK判断。"],
+    "A03": ["每个面板对应一个时期；45°线上方表示RPK增长快于ASK。", "比较散点相对45°线的位置，可观察不同时期供需关系的结构变化。", "各时期样本独立筛选，国家数量可能不同。"],
+    "A01": ["绝对规模模式比较国家间ASK和RPK实际规模。", "指数模式比较各国相对自身基期的变化速度和轨迹。", "指数大小不能用于比较国家之间的绝对市场规模。"],
+    "F06": ["右下区域代表相关性较高、平均偏离较小；左上区域代表协调性较弱。", "点大小表示共同增长有效年份数，颜色表示动态类型。", "分类阈值随时间区间和数据更新重算，国家类型变化属于正常结果。"],
+    "T01": ["ASK排名反映运力供给规模，RPK排名反映实际客运运输规模。", "ASK排名更靠前表示该期运力规模相对实际客运规模更靠前。", "运力是否过剩还需结合PLF、趋势与市场背景。"],
+    "T02": ["同时增长和同时下降表示同方向变化。", "ASK增长、RPK下降以及ASK下降、RPK增长表示方向偏离。", "统计单位是国家—年份观测。"],
+    "T04": ["ASK_out是从该国机场出发国际航段的运力，ASK_in是抵达该国机场国际航段的运力。", "排名反映绝对规模，与F07的不对称程度含义不同。"],
+    "F07": ["ln(R)=0表示两侧基本对称；正值表示ASK_out更高；负值表示ASK_in更高。", "绝对值越大，方向不对称越明显。", "R衡量座公里运力供给结构，不能解释为旅客净流量。"],
+    "T03": ["表格按ln(R)两端筛选方向结构偏向最明显的国家。", "T03与F07共用时间区间、样本和计算口径。"],
+}
+
+def display_label(code: str) -> str:
+    title = CHARTS[code][0] if code in CHARTS else TABLES[code][0]
+    return f"{title}（{code}）"
 
 def source_fields(code):
-    if code in ('F07','T03','T04'):
-        return 'country_year_ask_capacity', ['country_code','country_name','year','ASK_out','ASK_in']
-    return 'Data', ['Country Name','Country Code','Time','ASKs','RPKs']
+    if code in ("F07", "T03", "T04"):
+        return "country_year_ask_capacity", ["country_code", "country_name", "year", "ASK_out", "ASK_in"]
+    return "Data", ["Country Name", "Country Code", "Time", "ASKs", "RPKs"]

@@ -2,7 +2,6 @@ import streamlit as st
 import pandas as pd
 from core.catalog import CHARTS,source_fields
 from core.view_data import chart_data,trend_metrics
-from components.safe_render import render_kpi_cards,render_table_html
 
 def sample_info(bundle,code):
     df=chart_data(bundle,code)
@@ -19,9 +18,10 @@ def sample_info(bundle,code):
     period=f'{int(df[year].min())}—{int(df[year].max())}' if year and not df.empty else '按本图样本定义'
     if code=='F07': period=f'{bundle.config.direction_start}—{bundle.config.direction_end}'
     if code=='A02': period='2016—2019 / 2020 / 2021'
-    render_kpi_cards([
-        ('有效国家',f'{countries:,}'),('当前数据行',f'{len(df):,}','国家汇总图为国家行'),('分析时期',period)
-    ])
+    a,b,c=st.columns(3)
+    a.metric('有效国家',f'{countries:,}')
+    b.metric('当前数据行',f'{len(df):,}',help='国家汇总图为国家行；散点与时间序列输入为国家—年份行。')
+    c.metric('分析时期',period)
 
 def chart_info(bundle,code):
     sheet,fields=source_fields(code)
@@ -32,7 +32,7 @@ def chart_info(bundle,code):
         st.write(CHARTS[code][4])
         if code=='F06':
             st.write('顺序：高相关且低绝对差 → ASK相对领先 → RPK相对领先 → 高波动 → 过渡。阈值由当前合格国家样本重算。')
-            render_table_html(bundle.thresholds,max_rows=30)
+            st.dataframe(bundle.thresholds,hide_index=True,width='stretch')
         if code=='A02':
-            st.warning('疫情前的国别汇总为PLF中位数，沿用实际原代码；不使用均值。')
+            st.info('第一时期的国别汇总使用有效PLF中位数；三个时期保持同一批国家。')
         st.caption(f'文件内容SHA256：{bundle.loaded.digest}')

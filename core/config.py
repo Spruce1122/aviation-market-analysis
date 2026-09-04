@@ -3,6 +3,7 @@ from dataclasses import dataclass, asdict
 from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
+SAMPLE_FILE = PROJECT_ROOT / 'sample_data/World_Development_Indicators.xlsx'
 DATA_SHEET = 'Data'
 DIRECTION_SHEET = 'country_year_ask_capacity'
 DATA_COLUMNS = ['Country Name', 'Country Code', 'Time', 'ASKs', 'RPKs']
@@ -14,7 +15,7 @@ ASK_DIRECTION_END = 2019
 TOP_DIRECTION_N = 9
 DIRECTION_RANK_TOP_N = 10
 REPRESENTATIVE_COUNTRIES = ['CHN','USA','IND','JPN','GBR','DEU','FRA','RUS','BRA','CAN','AUS','ZMB']
-MIN_DYNAMIC_VALID_YEARS = 3
+MIN_DYNAMIC_VALID_YEARS = 4
 DYNAMIC_QUANTILE_LOW = 0.25
 DYNAMIC_QUANTILE_HIGH = 0.75
 MIN_VALID_GROWTH_YEARS = 4
@@ -38,6 +39,7 @@ DPI = 350
 BASE_FONT_SIZE = 10.0
 PANEL_TITLE_SIZE = 11.0
 BOTTOM_TITLE_SIZE = 12.0
+VECTOR_FIGURE_DIR = PROJECT_ROOT / 'output/figures/vector'
 MAX_UPLOAD_BYTES = 50 * 1024 * 1024
 
 @dataclass(frozen=True)
@@ -51,6 +53,10 @@ class AnalysisConfig:
     representative_countries: tuple[str, ...] = tuple(REPRESENTATIVE_COUNTRIES)
     trend_year_start: int | None = None
     trend_year_end: int | None = None
+    period_pre_start: int = PANDEMIC_PRE_START
+    period_pre_end: int = PANDEMIC_PRE_END
+    period_shock_year: int = PANDEMIC_SHOCK_YEAR
+    period_recovery_year: int = PANDEMIC_RECOVERY_YEAR
 
     def validate(self):
         if not (1 <= self.n_large <= 500 and 1 <= self.n_small <= 500):
@@ -59,13 +65,15 @@ class AnalysisConfig:
             raise ValueError('ASK方向分析的起始年份不能晚于结束年份。')
         if self.top_direction_n not in (5, 9, 10, 15):
             raise ValueError('方向极端国家每侧数量须为5、9、10或15。')
-        if not 1 <= len(self.representative_countries) <= 12:
-            raise ValueError('代表国家请选择1—12个。')
+        if not 1 <= len(self.representative_countries) <= 30:
+            raise ValueError('代表国家请选择1—30个。')
         if not 2 <= self.min_dynamic_years <= 50:
             raise ValueError('动态分析最低有效年份须为2—50年。')
         if (self.trend_year_start is not None and self.trend_year_end is not None
                 and self.trend_year_start > self.trend_year_end):
             raise ValueError('趋势图起始年份不能晚于结束年份。')
+        if self.period_pre_start > self.period_pre_end:
+            raise ValueError('第一时期起始年份不能晚于结束年份。')
 
     def to_dict(self):
         return asdict(self)

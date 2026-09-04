@@ -80,17 +80,11 @@ def build_country_year_metrics(data: pd.DataFrame, config=DEFAULT_CONFIG) -> pd.
     return frame.sort_values(["Country Code", "Time"]).reset_index(drop=True)
 
 
-def build_representative_index_data(
-    metrics: pd.DataFrame, countries=None, start_year: int | None = None, end_year: int | None = None
-) -> pd.DataFrame:
+def build_representative_index_data(metrics: pd.DataFrame, countries=None) -> pd.DataFrame:
     """Create country-specific ASK/RPK indices with each country's own base year."""
     rows: list[pd.DataFrame] = []
     for code in (REPRESENTATIVE_COUNTRIES if countries is None else countries):
         country = metrics.loc[metrics["Country Code"].eq(code)].sort_values("Time").copy()
-        if start_year is not None:
-            country = country.loc[country["Time"].ge(start_year)]
-        if end_year is not None:
-            country = country.loc[country["Time"].le(end_year)]
         common_positive = country["ASKs"].gt(0) & country["RPKs"].gt(0)
         if not common_positive.any():
             continue
@@ -123,14 +117,6 @@ def build_representative_index_data(
     if not rows:
         return pd.DataFrame(columns=['Country Name','Country Code','Time','ASKs','RPKs','base_year','ASK_index','RPK_index'])
     return pd.concat(rows, ignore_index=True)
-
-
-def build_interval_dynamic_data(
-    metrics: pd.DataFrame, start_year: int, end_year: int, config=DEFAULT_CONFIG
-) -> tuple[pd.DataFrame, pd.DataFrame]:
-    """Recompute country dynamic metrics using growth already calculated on full series."""
-    interval = metrics.loc[metrics["Time"].between(start_year, end_year)].copy()
-    return build_country_dynamic_metrics(interval, config)
 
 
 def build_country_dynamic_metrics(

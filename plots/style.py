@@ -14,12 +14,14 @@ matplotlib.use("Agg")
 from matplotlib import font_manager, pyplot as plt
 from matplotlib.ticker import FuncFormatter
 import numpy as np
+from PIL import Image
 
 from core.config import (
     BASE_FONT_SIZE,
     BOTTOM_TITLE_SIZE,
     DPI,
     PANEL_TITLE_SIZE,
+    VECTOR_FIGURE_DIR,
 )
 
 
@@ -86,10 +88,7 @@ def setup_plotting_style(logger: logging.Logger) -> dict[str, str | bool]:
             candidates.append(Path(explicit))
         for pattern in [
             "/usr/share/fonts/**/NotoSerifCJK*.otf",
-            "/usr/share/fonts/**/NotoSerifCJK*.ttc",
             "/usr/share/fonts/**/NotoSerifSC*.otf",
-            "/usr/share/fonts/**/NotoSerifSC*.ttf",
-            "/usr/share/fonts/**/NotoSansCJK*.ttc",
             "/workspace/scratch/*/qa_fonts/noto-serif-sc-chinese-simplified-400-normal.ttf",
         ]:
             candidates.extend(Path(item) for item in glob.glob(pattern, recursive=True))
@@ -151,6 +150,25 @@ def percent_formatter(decimals: int = 1) -> FuncFormatter:
     return FuncFormatter(lambda value, _: f"{value:.{decimals}f}%")
 
 
+def save_figure(fig, png_path: Path) -> tuple[Path, Path]:
+    """Save mandatory PNG and a same-name PDF vector version."""
+    png_path.parent.mkdir(parents=True, exist_ok=True)
+    VECTOR_FIGURE_DIR.mkdir(parents=True, exist_ok=True)
+    pdf_path = VECTOR_FIGURE_DIR / f"{png_path.stem}.pdf"
+    png_temp = png_path.with_name(f".{png_path.stem}.tmp.png")
+    pdf_temp = pdf_path.with_name(f".{pdf_path.stem}.tmp.pdf")
+    fig.savefig(png_temp, dpi=DPI, bbox_inches="tight", facecolor="white")
+    with Image.open(png_temp) as image:
+        image.verify()
+    png_temp.replace(png_path)
+    fig.savefig(pdf_temp, bbox_inches="tight", facecolor="white")
+    if pdf_temp.stat().st_size == 0:
+        raise RuntimeError(f"矢量图保存失败: {pdf_temp}")
+    pdf_temp.replace(pdf_path)
+    plt.close(fig)
+    return png_path, pdf_path
+
+
 def robust_common_limits(values: Iterable[np.ndarray]) -> tuple[float, float]:
     from core.config import SCATTER_LIMIT_MARGIN, SCATTER_QUANTILE_HIGH, SCATTER_QUANTILE_LOW
 
@@ -168,32 +186,22 @@ def robust_common_limits(values: Iterable[np.ndarray]) -> tuple[float, float]:
     return low - margin, high + margin
 
 
-def adjust_text_labels(
-    texts: list,
-    ax,
-    logger: logging.Logger | None = None,
-    draw_arrows: bool = True,
-) -> None:
+def adjust_text_labels(texts: list, ax, logger: logging.Logger | None = None) -> None:
     """Use adjustText when installed; otherwise apply deterministic vertical repulsion."""
     if not texts:
         return
     try:
         from adjustText import adjust_text
 
-        kwargs = {
-            "texts": texts,
-            "ax": ax,
-            "expand": (1.08, 1.18),
-            "force_text": (0.25, 0.45),
-            "force_points": (0.15, 0.25),
-            "iter_lim": 150,
-            # Keep labels inside the axes so a tight PNG export cannot grow
-            # into an unexpectedly tall canvas.
-            "ensure_inside_axes": True,
-        }
-        if draw_arrows:
-            kwargs["arrowprops"] = {"arrowstyle": "-", "color": "#7D858C", "lw": 0.6}
-        adjust_text(**kwargs)
+        adjust_text(
+            texts,
+            ax=ax,
+            arrowprops={"arrowstyle": "-", "color": "#7D858C", "lw": 0.6},
+            expand=(1.08, 1.18),
+            force_text=(0.25, 0.45),
+            force_points=(0.15, 0.25),
+            iter_lim=150,
+        )
         return
     except ImportError:
         if logger:

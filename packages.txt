@@ -1,2 +1,2 @@
 fonts-noto-cjk
-fontconfig
+fonts-liberation

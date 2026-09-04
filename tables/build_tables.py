@@ -4,6 +4,54 @@ import logging
 from core.config import *
 LOGGER = logging.getLogger("aviation_dashboard")
 
+
+def ranking_for_period(metrics: pd.DataFrame, start: int, end: int) -> pd.DataFrame:
+    """Rank countries using pairwise-positive ASK/RPK observations in a chosen period."""
+    sample = metrics.loc[
+        metrics["Time"].between(start, end) & metrics["ASKs"].gt(0) & metrics["RPKs"].gt(0)
+    ].copy()
+    ranking = sample.groupby(["Country Name", "Country Code"], as_index=False).agg(
+        有效年份=("Time", "nunique"), ASK=("ASKs", "mean"), RPK=("RPKs", "mean"),
+        sum_ASK=("ASKs", "sum"), sum_RPK=("RPKs", "sum"),
+        ASK增长率=("ASK_growth", "median"), RPK增长率=("RPK_growth", "median"),
+    )
+    if ranking.empty:
+        return ranking
+    ranking["ASK排名"] = ranking["ASK"].rank(method="min", ascending=False).astype(int)
+    ranking["RPK排名"] = ranking["RPK"].rank(method="min", ascending=False).astype(int)
+    ranking["加权PLF（%）"] = ranking["sum_RPK"].div(ranking["sum_ASK"]).mul(100)
+    ranking["ASK增长率（%）"] = ranking.pop("ASK增长率").mul(100)
+    ranking["RPK增长率（%）"] = ranking.pop("RPK增长率").mul(100)
+    return ranking.drop(columns=["sum_ASK", "sum_RPK"])
+
+
+def direction_counts_for_period(metrics: pd.DataFrame, start: int, end: int):
+    common = metrics.loc[metrics["common_growth_sample"] & metrics["Time"].between(start, end)].copy()
+    categories = [
+        ("同时增长", "both_up"), ("同时下降", "both_down"),
+        ("ASK增长、RPK下降", "ASK_up_RPK_down"), ("ASK下降、RPK增长", "ASK_down_RPK_up"),
+        ("同方向合计", "same_direction"), ("反方向合计", "opposite_direction"),
+    ]
+    total = len(common)
+    summary = pd.DataFrame([
+        {"变化方向": label, "观测数": int(common[col].sum()),
+         "占有效样本比例（%）": int(common[col].sum()) / total * 100 if total else float("nan")}
+        for label, col in categories
+    ])
+    detail_cols = ["Country Name", "Country Code", "Time", "ASK_growth", "RPK_growth",
+                   "both_up", "both_down", "ASK_up_RPK_down", "ASK_down_RPK_up",
+                   "same_direction", "opposite_direction"]
+    detail = common[detail_cols].copy()
+    detail["ASK_growth"] *= 100
+    detail["RPK_growth"] *= 100
+    return summary, detail
+
+
+def direction_ranking_for_period(direction_metrics: pd.DataFrame, metric: str, top_n: int) -> pd.DataFrame:
+    label = "mean_ASK_out" if metric == "ASK_out" else "mean_ASK_in"
+    columns = ["country_name", "country_code", "mean_ASK_out", "mean_ASK_in", "R", "ln_R", "n_years"]
+    return direction_metrics.sort_values([label, "country_code"], ascending=[False, True])[columns].head(top_n)
+
 def make_t01(metrics: pd.DataFrame, logger=LOGGER, config=DEFAULT_CONFIG) :
     sample = metrics.loc[
         metrics["Time"].between(RANKING_START_YEAR, RANKING_END_YEAR)
@@ -87,5 +135,4 @@ def make_t04(direction_metrics: pd.DataFrame, logger=LOGGER, config=DEFAULT_CONF
         .rename(columns=rename)
     )
     return {"ASK_out_top10": out_top, "ASK_in_top10": in_top}
-
 

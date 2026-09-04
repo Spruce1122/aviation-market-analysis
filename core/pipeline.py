@@ -43,7 +43,7 @@ def build_analysis(loaded: LoadedWorkbook, config=DEFAULT_CONFIG):
     try:
         metrics = build_country_year_metrics(loaded.data, config)
     except ValueError as exc:
-        raise DataInputError(str(exc) + ' 当前固定研究口径要求至少80个可分组国家。', loaded.report) from exc
+        raise DataInputError(str(exc) + ' 请在左侧参数中减小大型/小型市场数量后应用。', loaded.report) from exc
     all_indices = build_representative_index_data(metrics, sorted(metrics['Country Code'].unique()))
     indices = build_representative_index_data(metrics, config.representative_countries)
     try:
@@ -60,7 +60,7 @@ def build_analysis(loaded: LoadedWorkbook, config=DEFAULT_CONFIG):
     low, high = select_direction_extremes(direction, config)
     if direction.empty:
         notes.append('当前方向分析区间没有可用国家，F07、T03、T04不可用。')
-    balanced = build_balanced_pandemic_plf(metrics)
+    balanced = build_balanced_pandemic_plf(metrics, config)
     t01, ranking = make_t01(metrics, config=config)
     tables = {'T01': t01, 'T02': make_t02(metrics, config=config)}
     if not direction.empty:
