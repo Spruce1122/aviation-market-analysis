@@ -55,7 +55,7 @@ def _read_expander(code):
 def _show_figure(bundle, code, fig=None, data=None, key_suffix=""):
     try:
         if fig is None:
-            fig = render_chart(bundle, code)
+            fig = render_chart(bundle, code, numbered_title=False)
         if data is None:
             data = chart_data(bundle, code)
         with PLOT_LOCK:
@@ -236,11 +236,11 @@ def country_analysis_page(bundle):
             return
         with PLOT_LOCK:
             if mode == "绝对规模":
-                fig = plot_a01_absolute(filtered, countries)
+                fig = plot_a01_absolute(filtered, countries, bottom_title=CHARTS[code][0])
                 data = filtered[["Country Name", "Country Code", "Time", "ASKs", "RPKs"]]
             else:
                 data = build_representative_index_data(filtered, countries)
-                fig = plot_f05(data, cfg, bottom_title="附图1 自选国家ASK/RPK指数走势")
+                fig = plot_f05(data, cfg, bottom_title=CHARTS[code][0])
         temp = copy(bundle); temp.config = cfg; temp.indices = data
         _show_figure(temp, code, fig=fig, data=data, key_suffix="_"+mode)
         return
@@ -257,7 +257,7 @@ def country_analysis_page(bundle):
     if not _activate_plot_fonts():
         return
     with PLOT_LOCK:
-        fig = plot_f06(dynamic, bundle.config, countries)
+        fig = plot_f06(dynamic, bundle.config, countries, bottom_title=CHARTS[code][0])
     data = dynamic.copy()
     data["重点显示"] = data["Country Code"].isin(countries)
     temp = copy(bundle); temp.dynamic = dynamic; temp.thresholds = thresholds; temp.metrics = filtered
@@ -315,7 +315,7 @@ def direction_analysis_page(bundle):
     if not _activate_plot_fonts():
         return
     with PLOT_LOCK:
-        fig = plot_f07(lower, upper, cfg)
+        fig = plot_f07(lower, upper, cfg, bottom_title=CHARTS[code][0])
     temp = copy(bundle); temp.config = cfg; temp.direction = direction; temp.direction_low = lower; temp.direction_high = upper
     _show_figure(temp, code, fig=fig, data=data, key_suffix="_period")
 

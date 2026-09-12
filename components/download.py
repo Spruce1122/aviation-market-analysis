@@ -20,7 +20,9 @@ def full_download(bundle):
     if st.button('生成完整结果 ZIP',key='build_zip'):
         progress=st.progress(0,text='准备导出')
         try:
-            st.session_state.results_zip=results_zip(bundle,lambda value,text:progress.progress(value,text=text))
+            st.session_state.results_zip=results_zip(
+                bundle,lambda value,text:progress.progress(value,text=text),numbered_titles=False
+            )
         except Exception:
             st.error('完整结果导出未完成，请检查样本及数据质量后重试。')
             st.session_state.pop('results_zip',None)

@@ -12,7 +12,8 @@ from plots.style import (COLORS, MARKET_LABELS, add_bottom_title, adjust_text_la
                          percent_formatter, robust_common_limits, style_axis)
 LOGGER = logging.getLogger("aviation_dashboard")
 
-def plot_f02(metrics, config=DEFAULT_CONFIG, logger=LOGGER):
+def plot_f02(metrics, config=DEFAULT_CONFIG, logger=LOGGER,
+             bottom_title="图2 ASK与RPK年度增长率中位数趋势"):
     ask = metrics.dropna(subset=["ASK_growth"]).groupby("Time")["ASK_growth"].median().mul(100)
     rpk = metrics.dropna(subset=["RPK_growth"]).groupby("Time")["RPK_growth"].median().mul(100)
     years = sorted(set(ask.index).union(rpk.index))
@@ -30,7 +31,6 @@ def plot_f02(metrics, config=DEFAULT_CONFIG, logger=LOGGER):
     style_axis(ax, "y")
     ax.legend(loc="upper center", bbox_to_anchor=(0.5, 1.1), ncol=2, frameon=False)
     fig.subplots_adjust(left=0.12, right=0.97, top=0.84, bottom=0.20)
-    add_bottom_title(fig, "图2 ASK与RPK年度增长率中位数趋势", 0.018)
+    add_bottom_title(fig, bottom_title, 0.018)
     return fig
-
 

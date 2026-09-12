@@ -59,7 +59,7 @@ def build_analysis(loaded: LoadedWorkbook, config=DEFAULT_CONFIG):
         direction = pd.DataFrame(columns=['country_code','country_name','mean_ASK_out','mean_ASK_in','n_years','R','ln_R'])
     low, high = select_direction_extremes(direction, config)
     if direction.empty:
-        notes.append('当前方向分析区间没有可用国家，F07、T03、T04不可用。')
+        notes.append('当前方向分析区间没有可用国家，方向不对称图和相关统计表暂不可用。')
     balanced = build_balanced_pandemic_plf(metrics, config)
     t01, ranking = make_t01(metrics, config=config)
     tables = {'T01': t01, 'T02': make_t02(metrics, config=config)}

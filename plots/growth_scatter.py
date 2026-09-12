@@ -12,7 +12,8 @@ from plots.style import (COLORS, MARKET_LABELS, add_bottom_title, adjust_text_la
                          percent_formatter, robust_common_limits, style_axis)
 LOGGER = logging.getLogger("aviation_dashboard")
 
-def plot_f01(metrics, config=DEFAULT_CONFIG, logger=LOGGER):
+def plot_f01(metrics, config=DEFAULT_CONFIG, logger=LOGGER,
+             bottom_title="图1 ASK与RPK年度增长的同步与偏离"):
     sample = metrics.loc[metrics["common_growth_sample"] & metrics["market_size_group"].notna()].copy()
     sample["x"] = sample["ASK_growth"] * 100
     sample["y"] = sample["RPK_growth"] * 100
@@ -39,7 +40,7 @@ def plot_f01(metrics, config=DEFAULT_CONFIG, logger=LOGGER):
         bbox_to_anchor=(0.5, 1.09), ncol=3, frameon=False,
     )
     fig.subplots_adjust(left=0.13, right=0.97, top=0.88, bottom=0.15)
-    add_bottom_title(fig, "图1 ASK与RPK年度增长的同步与偏离", 0.018)
+    add_bottom_title(fig, bottom_title, 0.018)
     return fig
 
 
@@ -52,5 +53,4 @@ def _market_legend_handles():
         )
         for group in ["Large", "Medium", "Small"]
     ]
-
 

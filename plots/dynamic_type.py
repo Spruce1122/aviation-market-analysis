@@ -12,7 +12,8 @@ from plots.style import (COLORS, MARKET_LABELS, add_bottom_title, adjust_text_la
                          percent_formatter, robust_common_limits, style_axis)
 LOGGER = logging.getLogger("aviation_dashboard")
 
-def plot_f06(country_dynamic, config=DEFAULT_CONFIG, logger=LOGGER, highlight_codes=()):
+def plot_f06(country_dynamic, config=DEFAULT_CONFIG, logger=LOGGER, highlight_codes=(),
+             bottom_title="图6 国家动态关系类型散点图"):
     plot_data = country_dynamic.dropna(subset=["corr_ask_rpk", "mean_abs_growth_gap"]).copy()
     plot_data["gap_pp"] = plot_data["mean_abs_growth_gap"] * 100
     n_min, n_max = plot_data["n_valid"].min(), plot_data["n_valid"].max()
@@ -60,6 +61,5 @@ def plot_f06(country_dynamic, config=DEFAULT_CONFIG, logger=LOGGER, highlight_co
         )
     adjust_text_labels(texts, ax, logger)
     fig.subplots_adjust(left=0.11, right=0.98, top=0.84, bottom=0.15)
-    add_bottom_title(fig, "图6 国家动态关系类型散点图", 0.018)
+    add_bottom_title(fig, bottom_title, 0.018)
     return fig
-

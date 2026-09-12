@@ -4,6 +4,7 @@ import threading
 import numpy as np
 import matplotlib.pyplot as plt
 from core.view_data import chart_data, trend_metrics
+from core.catalog import CHARTS
 from plots.style import setup_plotting_style
 from plots.growth_scatter import plot_f01
 from plots.growth_trend import plot_f02
@@ -20,7 +21,7 @@ LOGGER = logging.getLogger('aviation_dashboard')
 class ChartUnavailable(ValueError):
     pass
 
-def render_chart(bundle, code):
+def render_chart(bundle, code, numbered_title=True):
     data = chart_data(bundle, code)
     if data.empty:
         raise ChartUnavailable('当前数据或参数下没有满足本图条件的有效样本。请检查数据覆盖和样本要求。')
@@ -35,16 +36,23 @@ def render_chart(bundle, code):
             except RuntimeError as exc:
                 raise ChartUnavailable(str(exc)) from exc
             m,c = bundle.metrics,bundle.config
-            if code=='F01': fig=plot_f01(m,c)
-            elif code=='F02': fig=plot_f02(trend_metrics(bundle),c)
-            elif code=='F03': fig=plot_f03(trend_metrics(bundle),c)
-            elif code=='F04': fig=plot_f04(m,c)
-            elif code=='F05': fig=plot_f05(bundle.indices,c)
-            elif code=='F06': fig=plot_f06(bundle.dynamic,c)
-            elif code=='F07': fig=plot_f07(bundle.direction_low,bundle.direction_high,c)
-            elif code=='A01': fig=plot_f05(bundle.indices,c,bottom_title='附图1 自选国家ASK/RPK指数比较')
-            elif code=='A02': fig=plot_a02(m,c)
-            elif code=='A03': fig=plot_a03(m,c)
+            web_title = {} if numbered_title else {"bottom_title": CHARTS[code][0]}
+            if code=='F01': fig=plot_f01(m,c,**web_title)
+            elif code=='F02': fig=plot_f02(trend_metrics(bundle),c,**web_title)
+            elif code=='F03': fig=plot_f03(trend_metrics(bundle),c,**web_title)
+            elif code=='F04': fig=plot_f04(m,c,**web_title)
+            elif code=='F05': fig=plot_f05(
+                bundle.indices,c,
+                bottom_title=CHARTS[code][0] if not numbered_title else '图5 代表性国家ASK与RPK指数走势',
+            )
+            elif code=='F06': fig=plot_f06(bundle.dynamic,c,**web_title)
+            elif code=='F07': fig=plot_f07(bundle.direction_low,bundle.direction_high,c,**web_title)
+            elif code=='A01': fig=plot_f05(
+                bundle.indices,c,
+                bottom_title=CHARTS[code][0] if not numbered_title else '附图1 自选国家ASK/RPK指数比较',
+            )
+            elif code=='A02': fig=plot_a02(m,c,**web_title)
+            elif code=='A03': fig=plot_a03(m,c,**web_title)
             else: raise KeyError(code)
             plt.close(fig)  # Remove pyplot global registry; Figure remains usable by st.pyplot/savefig.
             return fig

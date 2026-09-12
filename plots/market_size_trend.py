@@ -12,7 +12,8 @@ from plots.style import (COLORS, MARKET_LABELS, add_bottom_title, adjust_text_la
                          percent_formatter, robust_common_limits, style_axis)
 LOGGER = logging.getLogger("aviation_dashboard")
 
-def plot_f03(metrics, config=DEFAULT_CONFIG, logger=LOGGER):
+def plot_f03(metrics, config=DEFAULT_CONFIG, logger=LOGGER,
+             bottom_title="图3 不同规模市场的ASK与RPK增长趋势"):
     panels = [("Large", "A 大型市场"), ("Medium", "B 中型市场"), ("Small", "C 小型市场")]
     fig, axes = plt.subplots(1, 3, figsize=(14.2, 5.1), sharey=True)
     for ax, (group, title) in zip(axes, panels):
@@ -34,7 +35,6 @@ def plot_f03(metrics, config=DEFAULT_CONFIG, logger=LOGGER):
     ]
     fig.legend(handles=handles, loc="upper center", bbox_to_anchor=(0.5, 0.98), ncol=2, frameon=False)
     fig.subplots_adjust(left=0.075, right=0.985, top=0.82, bottom=0.23, wspace=0.16)
-    add_bottom_title(fig, "图3 不同规模市场的ASK与RPK增长趋势", 0.02)
+    add_bottom_title(fig, bottom_title, 0.02)
     return fig
-
 

@@ -93,7 +93,33 @@ def test_navigation_and_labels_follow_new_information_architecture():
     ]
     assert MODULE_ITEMS["全样本分析"] == ["F02", "F01", "F03", "F04", "A02", "A03"]
     assert "F05" not in sum(MODULE_ITEMS.values(), [])
-    assert display_label("F02") == "ASK/RPK年度增长率趋势（F02）"
+    assert display_label("F02") == "ASK/RPK年度增长率趋势"
+    assert display_label("A01") == "自选国家ASK/RPK规模与指数比较"
+    assert display_label("T01") == "ASK/RPK国家排名与排名查询"
+
+    expected_labels = {
+        "全样本分析": [
+            "ASK/RPK年度增长率趋势",
+            "ASK与RPK年度增长同步与偏离",
+            "不同规模市场ASK/RPK增长趋势",
+            "不同规模市场ASK/RPK同步性与偏离",
+            "PLF年度变化与市场规模比较",
+            "ASK/RPK年度增长关系分时期观察",
+        ],
+        "分国家ASK/RPK分析": [
+            "ASK/RPK国家排名与排名查询",
+            "自选国家ASK/RPK规模与指数比较",
+            "国家ASK/RPK动态关系类型",
+            "各国ASK/RPK年度变化方向统计",
+        ],
+        "出发侧（ASK_out）与到达侧（ASK_in）分析": [
+            "ASK_out / ASK_in国家规模排名",
+            "ASK_out与ASK_in方向不对称",
+            "ASK_out / ASK_in极端不对称国家",
+        ],
+    }
+    for module, labels in expected_labels.items():
+        assert [display_label(code) for code in MODULE_ITEMS[module]] == labels
 
 
 def test_period_rankings_and_direction_counts_change_with_selected_years():

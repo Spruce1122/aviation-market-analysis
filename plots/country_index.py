@@ -47,7 +47,8 @@ def plot_f05(index_data, config=DEFAULT_CONFIG, logger=LOGGER, bottom_title="图
     return fig
 
 
-def plot_a01_absolute(metrics, countries, logger=LOGGER):
+def plot_a01_absolute(metrics, countries, logger=LOGGER,
+                      bottom_title="附图1 自选国家ASK/RPK绝对规模比较"):
     """Small multiples of ASK/RPK levels for selected countries."""
     rows = max(1, math.ceil(len(countries) / 3))
     cols = min(3, max(1, len(countries)))
@@ -77,5 +78,5 @@ def plot_a01_absolute(metrics, countries, logger=LOGGER):
     ]
     fig.legend(handles=handles, loc="upper center", bbox_to_anchor=(.5, .985), ncol=2, frameon=False)
     fig.subplots_adjust(left=.085, right=.985, top=.92, bottom=.10, wspace=.22, hspace=.34)
-    add_bottom_title(fig, "附图1 自选国家ASK/RPK绝对规模比较", .016)
+    add_bottom_title(fig, bottom_title, .016)
     return fig

@@ -34,17 +34,17 @@ def figure_bytes(fig,fmt='png'):
         fig.savefig(output,format=fmt,dpi=DPI,bbox_inches='tight',facecolor='white')
     return output.getvalue()
 
-def results_zip(bundle, progress=None):
+def results_zip(bundle, progress=None, numbered_titles=True):
     output=BytesIO()
     skipped=[]
     with zipfile.ZipFile(output,'w',zipfile.ZIP_DEFLATED) as archive:
         for i,(code,meta) in enumerate(CHARTS.items()):
-            if progress: progress(i/len(CHARTS),f'检查并生成 {code} · {meta[0]}')
+            if progress: progress(i/len(CHARTS),f'检查并生成 {meta[0]}')
             try:
-                fig=render_chart(bundle,code)
+                fig=render_chart(bundle,code,numbered_title=numbered_titles)
             except ChartUnavailable as exc:
                 skipped.append(f'{code}: {exc}')
-                if progress: progress(i/len(CHARTS),f'跳过 {code} · 当前数据不满足条件')
+                if progress: progress(i/len(CHARTS),f'跳过 {meta[0]} · 当前数据不满足条件')
                 continue
             folder='core' if code.startswith('F') else 'additional'
             archive.writestr(f'figures/{folder}/{meta[1]}.png',figure_bytes(fig))

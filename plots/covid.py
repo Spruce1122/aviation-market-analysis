@@ -14,7 +14,8 @@ LOGGER = logging.getLogger("aviation_dashboard")
 
 from core.pandemic import build_balanced_pandemic_plf
 
-def plot_a02(metrics, config=DEFAULT_CONFIG, logger=LOGGER):
+def plot_a02(metrics, config=DEFAULT_CONFIG, logger=LOGGER,
+             bottom_title="附图2 PLF年度变化与市场规模比较"):
     balanced = build_balanced_pandemic_plf(metrics, config)
     period_columns = ["pre_plf", "shock_plf", "recovery_plf"]
     period_labels = [f"第一时期\n{config.period_pre_start}—{config.period_pre_end}",
@@ -58,11 +59,12 @@ def plot_a02(metrics, config=DEFAULT_CONFIG, logger=LOGGER):
     ax.legend(handles=group_handles, loc="upper center", bbox_to_anchor=(0.5, 1.02), frameon=False)
 
     fig.subplots_adjust(left=0.075, right=0.985, top=0.82, bottom=0.22, wspace=0.14)
-    add_bottom_title(fig, "附图2 PLF年度变化与市场规模比较", 0.018)
+    add_bottom_title(fig, bottom_title, 0.018)
     return fig
 
 
-def plot_a03(metrics, config=DEFAULT_CONFIG, logger=LOGGER):
+def plot_a03(metrics, config=DEFAULT_CONFIG, logger=LOGGER,
+             bottom_title="附图3 ASK/RPK年度增长关系分时期观察"):
     common = metrics.loc[metrics["common_growth_sample"]].copy()
     common["x"] = common["ASK_growth"] * 100
     common["y"] = common["RPK_growth"] * 100
@@ -91,7 +93,7 @@ def plot_a03(metrics, config=DEFAULT_CONFIG, logger=LOGGER):
         _label_representative_points(ax, part, logger)
     axes[0].set_ylabel("RPK年度增长率（%）", labelpad=8)
     fig.subplots_adjust(left=0.075, right=0.99, top=0.86, bottom=0.22, wspace=0.14)
-    add_bottom_title(fig, "附图3 ASK/RPK年度增长关系分时期观察", 0.018)
+    add_bottom_title(fig, bottom_title, 0.018)
     return fig
 
 

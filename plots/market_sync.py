@@ -12,7 +12,8 @@ from plots.style import (COLORS, MARKET_LABELS, add_bottom_title, adjust_text_la
                          percent_formatter, robust_common_limits, style_axis)
 LOGGER = logging.getLogger("aviation_dashboard")
 
-def plot_f04(metrics, config=DEFAULT_CONFIG, logger=LOGGER):
+def plot_f04(metrics, config=DEFAULT_CONFIG, logger=LOGGER,
+             bottom_title="图4 不同市场规模国家的ASK–RPK同步性与偏离"):
     common = metrics.loc[metrics["common_growth_sample"] & metrics["market_size_group"].notna()].copy()
     rows = []
     for group in ["Large", "Medium", "Small"]:
@@ -56,7 +57,7 @@ def plot_f04(metrics, config=DEFAULT_CONFIG, logger=LOGGER):
         style_axis(ax, "y")
         _annotate_bar_panel(ax, bars, values, summary["N"], formatter, 0.035)
     fig.subplots_adjust(left=0.065, right=0.99, top=0.82, bottom=0.22, wspace=0.25)
-    add_bottom_title(fig, "图4 不同市场规模国家的ASK–RPK同步性与偏离", 0.018)
+    add_bottom_title(fig, bottom_title, 0.018)
     return fig
 
 
@@ -81,4 +82,3 @@ def _annotate_bar_panel(ax, bars, values, n_values, formatter, offset_ratio=0.04
             linespacing=1.25,
             clip_on=False,
         )
-

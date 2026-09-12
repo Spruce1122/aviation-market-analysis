@@ -12,7 +12,8 @@ from plots.style import (COLORS, MARKET_LABELS, add_bottom_title, adjust_text_la
                          percent_formatter, robust_common_limits, style_axis)
 LOGGER = logging.getLogger("aviation_dashboard")
 
-def plot_f07(direction_low, direction_high, config=DEFAULT_CONFIG, logger=LOGGER):
+def plot_f07(direction_low, direction_high, config=DEFAULT_CONFIG, logger=LOGGER,
+             bottom_title="图7 ASK_out与ASK_in方向不对称国家比较"):
     data = pd.concat([direction_low, direction_high], ignore_index=True).drop_duplicates("country_code").sort_values(["ln_R", "country_code"])
     colors = [COLORS[group] for group in data["extreme_group"]]
     fig, ax = plt.subplots(figsize=(10.0, max(8.6, len(data) * 0.40 + 1.4)))
@@ -35,7 +36,6 @@ def plot_f07(direction_low, direction_high, config=DEFAULT_CONFIG, logger=LOGGER
     ax.text(0.02, 1.015, "ASK_in相对占优", transform=ax.transAxes, color=COLORS["ASK_in相对占优"], ha="left")
     ax.text(0.98, 1.015, "ASK_out相对占优", transform=ax.transAxes, color=COLORS["ASK_out相对占优"], ha="right")
     fig.subplots_adjust(left=0.29, right=0.94, top=0.91, bottom=0.14)
-    add_bottom_title(fig, "图7 ASK_out与ASK_in方向不对称国家比较", 0.014)
+    add_bottom_title(fig, bottom_title, 0.014)
     return fig
-
 
